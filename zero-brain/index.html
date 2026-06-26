@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Z.E.R.O. · AI Second Brain</title>
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: #000;
+  color: #fff;
+  font-family: 'Courier New', monospace;
+  overflow: hidden;
+  height: 100vh;
+  width: 100vw;
+  user-select: none;
+}
+
+canvas { position: fixed; inset: 0; }
+
+/* ── HUD wrapper ────────────────────────────────── */
+.hud { position: fixed; inset: 0; pointer-events: none; }
+
+/* Corner brackets */
+.corner {
+  position: absolute;
+  width: 36px; height: 36px;
+  border-color: rgba(0, 200, 255, 0.3);
+  border-style: solid;
+}
+.c-tl { top: 12px; left: 12px; border-width: 2px 0 0 2px; }
+.c-tr { top: 12px; right: 12px; border-width: 2px 2px 0 0; }
+.c-bl { bottom: 12px; left: 12px; border-width: 0 0 2px 2px; }
+.c-br { bottom: 12px; right: 12px; border-width: 0 2px 2px 0; }
+
+/* Scanline sweep */
+.scanline {
+  position: absolute;
+  left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, rgba(0,210,255,0.12) 40%, rgba(0,210,255,0.18) 50%, rgba(0,210,255,0.12) 60%, transparent 100%);
+  animation: scan 5s linear infinite;
+  pointer-events: none;
+}
+@keyframes scan { from{top:0%} to{top:100%} }
+
+/* ── Top bar ─────────────────────────────────────── */
+.topbar {
+  position: absolute;
+  top: 16px; left: 56px; right: 56px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.brand { display: flex; flex-direction: column; }
+.brand-name {
+  font-size: 14px; font-weight: 900; letter-spacing: 4px; color: #fff;
+  text-shadow: 0 0 20px rgba(0,200,255,0.4);
+}
+.brand-sub { font-size: 7.5px; color: #3a3a3a; letter-spacing: 2.5px; margin-top: 3px; }
+
+/* Center badge */
+.badge { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.live-pill {
+  display: flex; align-items: center; gap: 7px;
+  border: 1px solid #900;
+  background: rgba(50,0,0,0.8);
+  padding: 4px 14px;
+  font-size: 10px; font-weight: bold; color: #f44;
+  letter-spacing: 1.5px;
+  border-radius: 2px;
+}
+.live-dot { width: 6px; height: 6px; background: #f00; border-radius: 50%; animation: blink 1s ease-in-out infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.1} }
+
+.live-stats {
+  display: flex; gap: 18px;
+  font-size: 7.5px; letter-spacing: 1px; color: #333;
+}
+.ls-v { color: #0cf; font-variant-numeric: tabular-nums; }
+
+/* Right metrics */
+.metrics { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; font-size: 7.5px; letter-spacing: 1px; }
+.m-row { display: flex; gap: 10px; }
+.m-lbl { color: #333; }
+.m-val { min-width: 36px; text-align: right; }
+.m-val.ok   { color: #4f8; }
+.m-val.warn { color: #f84; }
+.m-val.info { color: #4af; }
+
+/* ── Bottom bar ──────────────────────────────────── */
+.bottombar {
+  position: absolute;
+  bottom: 16px; left: 56px; right: 56px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+/* 8-section chips */
+.sections { display: flex; gap: 5px; flex-wrap: wrap; max-width: 320px; }
+.chip {
+  font-size: 7px; letter-spacing: 1px; color: #2a2a2a;
+  border: 1px solid #1a1a1a;
+  padding: 2px 6px; border-radius: 2px;
+  transition: all 0.4s;
+}
+.chip.active { color: #0cf; border-color: rgba(0,200,255,0.4); background: rgba(0,200,255,0.05); text-shadow: 0 0 8px rgba(0,200,255,0.5); }
+
+/* Terminal prompt */
+.terminal {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 8px; letter-spacing: 1px;
+  flex: 1; justify-content: center;
+}
+.t-prompt { color: #4f8; }
+.t-text { color: #3a3a3a; white-space: nowrap; overflow: hidden; border-right: 1px solid #3a3a3a; animation: tcursor 1.2s step-end infinite; }
+@keyframes tcursor { 0%,100%{border-color:#3a3a3a} 50%{border-color:transparent} }
+
+/* Status */
+.statusline { font-size: 7.5px; color: #2a2a2a; letter-spacing: 1px; text-align: right; white-space: nowrap; }
+.statusline .on { color: #4f8; }
+.statusline .cnt { color: #4af; }
+
+/* ── Left sidebar ────────────────────────────────── */
+.left-sidebar {
+  position: absolute;
+  left: 14px; top: 50%; transform: translateY(-50%);
+  display: flex; flex-direction: column; gap: 10px;
+  font-size: 7.5px; letter-spacing: 1px;
+}
+.sb-block { border-left: 1px solid #161616; padding-left: 7px; }
+.sb-label { color: #222; margin-bottom: 2px; }
+.sb-val { font-size: 13px; font-weight: bold; font-variant-numeric: tabular-nums; }
+
+/* ── Right activity graph ────────────────────────── */
+.activity-graph {
+  position: absolute;
+  right: 14px; top: 50%; transform: translateY(-50%);
+  width: 10px; height: 180px;
+  display: flex; flex-direction: column; gap: 2px;
+}
+.act-seg {
+  flex: 1; background: rgba(0,200,100,0.15); border-radius: 1px;
+  transition: background 0.3s;
+}
+.act-seg.on { background: rgba(0,200,100,0.6); }
+
+/* ── Brain region labels ─────────────────────────── */
+.region {
+  position: absolute;
+  border: 1px solid;
+  background: rgba(0,0,0,0.78);
+  padding: 5px 9px;
+  min-width: 128px;
+  transition: opacity 0.5s;
+}
+.r-name { font-weight: bold; font-size: 10px; letter-spacing: 1px; margin-bottom: 2px; }
+.r-stat { font-size: 7.5px; color: #666; }
+.r-bar-wrap { margin-top: 4px; height: 2px; background: rgba(255,255,255,0.07); border-radius: 1px; overflow: hidden; }
+.r-bar-fill { height: 100%; border-radius: 1px; animation: rpulse 2.4s ease-in-out infinite; }
+@keyframes rpulse { 0%,100%{opacity:0.9} 50%{opacity:0.35} }
+
+/* ── Agent cards ─────────────────────────────────── */
+.agent-card {
+  position: absolute;
+  border: 1px solid rgba(60,160,255,0.35);
+  background: rgba(0,5,15,0.9);
+  padding: 8px 10px;
+  min-width: 170px;
+  transition: opacity 0.6s;
+}
+.a-id { font-size: 7.5px; font-weight: bold; letter-spacing: 1.5px; color: #4af; margin-bottom: 3px; }
+.a-task { font-size: 8.5px; color: #bbb; margin-bottom: 6px; line-height: 1.35; }
+.a-prog-wrap { height: 2px; background: rgba(255,255,255,0.07); border-radius: 1px; overflow: hidden; margin-bottom: 4px; }
+.a-prog-fill { height: 100%; background: linear-gradient(90deg, #0af, #0ff); border-radius: 1px; width: 0%; transition: width 1.2s ease; }
+.a-status { font-size: 7.5px; }
+.a-status.running { color: #ff4; animation: flicker 1.8s ease-in-out infinite; }
+.a-status.complete { color: #4f8; }
+@keyframes flicker { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+/* ── Info panels ─────────────────────────────────── */
+.info-panel {
+  position: absolute;
+  border: 1px solid;
+  background: rgba(4,2,0,0.92);
+  padding: 11px 14px;
+  max-width: 350px;
+  transition: opacity 0.6s;
+}
+.i-title { font-size: 8.5px; font-weight: bold; letter-spacing: 1px; margin-bottom: 8px; padding-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,0.07); }
+.i-line { font-size: 7.5px; color: #999; line-height: 1.6; padding-left: 12px; position: relative; margin-bottom: 3px; }
+.i-line::before { content: '$'; position: absolute; left: 0; }
+
+/* ── Word flash ──────────────────────────────────── */
+.word-flash {
+  position: absolute;
+  bottom: 100px; left: 50%; transform: translateX(-50%);
+  font-size: clamp(38px, 6.5vw, 68px);
+  font-weight: 900;
+  letter-spacing: 6px;
+  color: #fff;
+  text-shadow: 0 0 30px rgba(255,255,255,0.35), 0 0 70px rgba(80,100,255,0.2);
+  opacity: 0;
+  transition: opacity 0.35s;
+  white-space: nowrap;
+}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+
+<div class="hud" id="hud">
+
+  <!-- Corner brackets -->
+  <div class="corner c-tl"></div>
+  <div class="corner c-tr"></div>
+  <div class="corner c-bl"></div>
+  <div class="corner c-br"></div>
+
+  <!-- Scan line -->
+  <div class="scanline"></div>
+
+  <!-- ── Top bar ── -->
+  <div class="topbar">
+    <div class="brand">
+      <div class="brand-name">Z.E.R.O.</div>
+      <div class="brand-sub">NEUROLIKE BRAIN · CONNECTED · AI SECOND BRAIN</div>
+    </div>
+
+    <div class="badge">
+      <div class="live-pill"><div class="live-dot"></div><span id="live-txt">LIVE 01 / 07</span></div>
+      <div class="live-stats">
+        <span>NEURONS <span class="ls-v" id="neuron-count">1,847</span></span>
+        <span>FIRING <span class="ls-v" id="fire-rate">0.8k/s</span></span>
+        <span>CONNECTIONS <span class="ls-v" id="conn-count">312</span></span>
+      </div>
+    </div>
+
+    <div class="metrics">
+      <div class="m-row"><span class="m-lbl">CPU</span><span class="m-val ok" id="m-cpu">2%</span></div>
+      <div class="m-row"><span class="m-lbl">MEM</span><span class="m-val warn" id="m-mem">6.1 GB</span></div>
+      <div class="m-row"><span class="m-lbl">OPS</span><span class="m-val info" id="m-ops">847/s</span></div>
+      <div class="m-row"><span class="m-lbl">MODEL</span><span class="m-val info">LOCAL · FREE</span></div>
+    </div>
+  </div>
+
+  <!-- ── Left sidebar ── -->
+  <div class="left-sidebar">
+    <div class="sb-block">
+      <div class="sb-label">AGENTS</div>
+      <div class="sb-val" id="sb-agents" style="color:#4af;">6</div>
+    </div>
+    <div class="sb-block">
+      <div class="sb-label">TASKS</div>
+      <div class="sb-val" id="sb-tasks" style="color:#4f8;">0</div>
+    </div>
+    <div class="sb-block">
+      <div class="sb-label">UPTIME</div>
+      <div class="sb-val" id="sb-uptime" style="color:#f84; font-size:10px;">00:00:00</div>
+    </div>
+  </div>
+
+  <!-- ── Right activity graph ── -->
+  <div class="activity-graph" id="act-graph">
+    <div class="act-seg"></div><div class="act-seg"></div><div class="act-seg"></div>
+    <div class="act-seg"></div><div class="act-seg"></div><div class="act-seg"></div>
+    <div class="act-seg"></div><div class="act-seg"></div><div class="act-seg"></div>
+    <div class="act-seg"></div><div class="act-seg"></div><div class="act-seg"></div>
+    <div class="act-seg"></div><div class="act-seg"></div><div class="act-seg"></div>
+    <div class="act-seg"></div>
+  </div>
+
+  <!-- ── Brain Region Labels ── -->
+  <div class="region" style="top:18%;right:18%;border-color:rgba(90,90,255,0.5);">
+    <div class="r-name" style="color:#88f;">PREFRONTAL</div>
+    <div class="r-stat">140 neurons · firing 0.8k</div>
+    <div class="r-bar-wrap"><div class="r-bar-fill" style="width:80%;background:#88f;"></div></div>
+  </div>
+
+  <div class="region" style="top:26%;left:35%;border-color:rgba(255,60,60,0.5);">
+    <div class="r-name" style="color:#f77;">MOTOR CORTEX</div>
+    <div class="r-stat">190 neurons · firing 0.8k</div>
+    <div class="r-bar-wrap"><div class="r-bar-fill" style="width:80%;background:#f77;"></div></div>
+  </div>
+
+  <div class="region" style="top:33%;left:22%;border-color:rgba(255,190,60,0.3);min-width:200px;">
+    <div class="r-name" style="color:#fb8;font-size:9px;">PARALLEL MINDS · 80 ONE DRIVING</div>
+    <div class="r-stat">distributed · multi-thread active</div>
+  </div>
+
+  <div class="region" style="top:40%;left:42%;border-color:rgba(160,70,255,0.5);">
+    <div class="r-name" style="color:#c8f;">ASSOCIATION</div>
+    <div class="r-stat">260 neurons · firing 0.5k</div>
+    <div class="r-bar-wrap"><div class="r-bar-fill" style="width:50%;background:#c8f;"></div></div>
+  </div>
+
+  <div class="region" style="top:33%;right:20%;border-color:rgba(0,200,255,0.5);">
+    <div class="r-name" style="color:#0cf;">CONCEPT LAYER</div>
+    <div class="r-stat">160 neurons · firing 0.8k</div>
+    <div class="r-bar-wrap"><div class="r-bar-fill" style="width:80%;background:#0cf;"></div></div>
+  </div>
+
+  <div class="region" style="top:46%;left:14%;border-color:rgba(0,200,90,0.5);">
+    <div class="r-name" style="color:#0c8;">SENSORY CORTEX</div>
+    <div class="r-stat">300 neurons · firing 0.6k</div>
+    <div class="r-bar-wrap"><div class="r-bar-fill" style="width:60%;background:#0c8;"></div></div>
+  </div>
+
+  <div class="region" style="top:46%;right:14%;border-color:rgba(255,140,0,0.5);">
+    <div class="r-name" style="color:#f90;">PREDICTIVE</div>
+    <div class="r-stat">180 neurons · firing 0.6k</div>
+    <div class="r-bar-wrap"><div class="r-bar-fill" style="width:60%;background:#f90;"></div></div>
+  </div>
+
+  <div class="region" style="top:57%;left:30%;border-color:rgba(230,230,60,0.35);">
+    <div class="r-name" style="color:#ee8;">FEATURE LAYER</div>
+    <div class="r-stat">100 neurons · firing 0.8k</div>
+    <div class="r-bar-wrap"><div class="r-bar-fill" style="width:80%;background:#ee8;"></div></div>
+  </div>
+
+  <div class="region" style="top:64%;left:16%;border-color:rgba(0,255,130,0.5);">
+    <div class="r-name" style="color:#0f9;">LANGUAGE</div>
+    <div class="r-stat">170 neurons · firing 0.6k</div>
+    <div class="r-bar-wrap"><div class="r-bar-fill" style="width:60%;background:#0f9;"></div></div>
+  </div>
+
+  <div class="region" style="top:64%;right:15%;border-color:rgba(0,200,200,0.5);">
+    <div class="r-name" style="color:#0cc;">HIPPOCAMPUS</div>
+    <div class="r-stat">160 neurons · firing 0.8k</div>
+    <div class="r-bar-wrap"><div class="r-bar-fill" style="width:80%;background:#0cc;"></div></div>
+  </div>
+
+  <div class="region" style="top:73%;left:36%;border-color:rgba(255,70,0,0.5);">
+    <div class="r-name" style="color:#f60;">BRAINSTEM</div>
+    <div class="r-stat">120 neurons · firing 0.8k</div>
+    <div class="r-bar-wrap"><div class="r-bar-fill" style="width:80%;background:#f60;"></div></div>
+  </div>
+
+  <div class="region" style="top:73%;right:18%;border-color:rgba(160,70,255,0.4);">
+    <div class="r-name" style="color:#a8f;">CEREBELLUM</div>
+    <div class="r-stat">PLANNED</div>
+  </div>
+
+  <div class="region" style="top:73%;left:14%;border-color:rgba(180,180,180,0.3);">
+    <div class="r-name" style="color:#ccc;">REFLEX ARC</div>
+    <div class="r-stat">PLANNED</div>
+  </div>
+
+  <!-- ── Agent Cards ── -->
+  <div class="agent-card" id="ac1" style="top:30%;left:5%;">
+    <div class="a-id">AGENT-01</div>
+    <div class="a-task">Qualifying new GHL lead</div>
+    <div class="a-prog-wrap"><div class="a-prog-fill" id="ap1"></div></div>
+    <div class="a-status running" id="as1">running...</div>
+  </div>
+
+  <div class="agent-card" id="ac2" style="top:30%;left:30%;">
+    <div class="a-id">AGENT-02</div>
+    <div class="a-task">Drafting outreach batch</div>
+    <div class="a-prog-wrap"><div class="a-prog-fill" id="ap2"></div></div>
+    <div class="a-status running" id="as2">running...</div>
+  </div>
+
+  <div class="agent-card" id="ac3" style="top:30%;right:5%;">
+    <div class="a-id">AGENT-03</div>
+    <div class="a-task">Scanning AI tool releases</div>
+    <div class="a-prog-wrap"><div class="a-prog-fill" id="ap3"></div></div>
+    <div class="a-status running" id="as3">running...</div>
+  </div>
+
+  <div class="agent-card" id="ac4" style="top:55%;left:5%;">
+    <div class="a-id">AGENT-04</div>
+    <div class="a-task">Rendering ad creative</div>
+    <div class="a-prog-wrap"><div class="a-prog-fill" id="ap4"></div></div>
+    <div class="a-status running" id="as4">running...</div>
+  </div>
+
+  <div class="agent-card" id="ac5" style="top:55%;left:30%;">
+    <div class="a-id">AGENT-05</div>
+    <div class="a-task">Auditing client pipeline</div>
+    <div class="a-prog-wrap"><div class="a-prog-fill" id="ap5"></div></div>
+    <div class="a-status running" id="as5">running...</div>
+  </div>
+
+  <div class="agent-card" id="ac6" style="top:55%;right:5%;">
+    <div class="a-id">AGENT-06</div>
+    <div class="a-task">Writing weekly rollup</div>
+    <div class="a-prog-wrap"><div class="a-prog-fill" id="ap6"></div></div>
+    <div class="a-status running" id="as6">running...</div>
+  </div>
+
+  <!-- ── Info Panels ── -->
+  <div class="info-panel" id="info-you" style="top:18%;left:5%;opacity:0;border-color:rgba(255,120,40,0.4);">
+    <div class="i-title" style="color:#f84;">WHAT I KNOW ABOUT YOU</div>
+    <div class="i-line" style="--c:#f84">Founder runs Agent Core AI (service agency) and AI Monopoly Club (community).</div>
+    <div class="i-line">Hard rule: research and execute autonomously; never bounce back menus for things that can be looked up.</div>
+  </div>
+
+  <div class="info-panel" id="info-biz" style="top:45%;left:5%;opacity:0;border-color:rgba(255,70,40,0.4);max-width:360px;">
+    <div class="i-title" style="color:#f64;">WHAT I KNOW ABOUT THE BUSINESS</div>
+    <div class="i-line">Stack is Python-first, Local-first (127.0.0.1), no Node.js. Default to the free local model.</div>
+    <div class="i-line">Agent Core AI's core product is high-converting picture/video ad hooks that drive leads.</div>
+    <div class="i-line">CRM is GoHighLevel (GHL). Runtime: ops-center, NeuronLikeai Brain (Z.E.R.O.).</div>
+    <div class="i-line">8 sections: sales, accounts, creative, engineering, research, ops, finance, community.</div>
+    <div class="i-line">Safety model: full autonomy on free local model; real-money actions gated by hard approval.</div>
+    <div class="i-line">Tools: Claude Code, Hermes, multi-agent shared context + memory.</div>
+  </div>
+
+  <!-- ── Bottom bar ── -->
+  <div class="bottombar">
+    <div class="sections">
+      <div class="chip" id="s-sales">SALES</div>
+      <div class="chip" id="s-accts">ACCTS</div>
+      <div class="chip" id="s-crea">CREATIVE</div>
+      <div class="chip" id="s-eng">ENGRG</div>
+      <div class="chip" id="s-res">RESEARCH</div>
+      <div class="chip" id="s-ops">OPS</div>
+      <div class="chip" id="s-fin">FINANCE</div>
+      <div class="chip" id="s-comm">COMMUNITY</div>
+    </div>
+
+    <div class="terminal">
+      <span class="t-prompt">ZERO &gt;</span>
+      <span class="t-text" id="t-text">LISTENING FOR "HEY ZERO"...</span>
+    </div>
+
+    <div class="statusline">
+      <span class="on">● CONNECTED</span><br>
+      <span class="cnt" id="agent-active">6 AGENTS ACTIVE</span><br>
+      <span id="tasks-done">0 TASKS DONE</span>
+    </div>
+  </div>
+
+  <!-- ── Word Flash ── -->
+  <div class="word-flash" id="word-flash"></div>
+
+</div>
+
+<script>
+'use strict';
+
+// ══════════════════════════════════════════════════
+//  Canvas — Neural Network
+// ══════════════════════════════════════════════════
+const canvas = document.getElementById('c');
+const ctx    = canvas.getContext('2d');
+let W, H, nodes = [], pulses = [];
+let t = 0;
+
+const BRAIN_REGIONS = [
+  { cx:0.62, cy:0.26, r:0.11, col:'#6060ff', n:22 },  // prefrontal
+  { cx:0.43, cy:0.25, r:0.10, col:'#ff4444', n:24 },  // motor cortex
+  { cx:0.50, cy:0.40, r:0.09, col:'#cc44ff', n:20 },  // association
+  { cx:0.63, cy:0.35, r:0.09, col:'#00ccff', n:17 },  // concept
+  { cx:0.27, cy:0.47, r:0.10, col:'#00cc66', n:22 },  // sensory
+  { cx:0.73, cy:0.47, r:0.09, col:'#ff8800', n:18 },  // predictive
+  { cx:0.43, cy:0.57, r:0.08, col:'#dddd44', n:15 },  // feature
+  { cx:0.30, cy:0.65, r:0.08, col:'#00ff88', n:16 },  // language
+  { cx:0.64, cy:0.65, r:0.09, col:'#00cccc', n:16 },  // hippocampus
+  { cx:0.47, cy:0.74, r:0.07, col:'#ff5500', n:13 },  // brainstem
+  { cx:0.72, cy:0.73, r:0.08, col:'#aa44ff', n:12 },  // cerebellum
+  { cx:0.24, cy:0.74, r:0.07, col:'#bbbbbb', n:10 },  // reflex
+];
+
+function hex2rgb(h) {
+  return [parseInt(h.slice(1,3),16), parseInt(h.slice(3,5),16), parseInt(h.slice(5,7),16)];
+}
+
+function initNodes() {
+  nodes = [];
+  BRAIN_REGIONS.forEach(reg => {
+    const maxR = reg.r * Math.min(W, H);
+    for (let i = 0; i < reg.n; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const dist  = Math.sqrt(Math.random()) * maxR;
+      const bx = reg.cx * W + Math.cos(angle) * dist;
+      const by = reg.cy * H + Math.sin(angle) * dist;
+      nodes.push({
+        bx, by, x: bx, y: by,
+        col: reg.col,
+        size:  Math.random() * 1.8 + 0.8,
+        phase: Math.random() * Math.PI * 2,
+        spd:   Math.random() * 0.35 + 0.12,
+        drift: Math.random() * 7 + 3,
+        firing: false,
+        fireT:  Math.random() * 5,
+      });
+    }
+  });
+}
+
+function resize() {
+  W = canvas.width  = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+  initNodes();
+}
+window.addEventListener('resize', resize);
+resize();
+
+// Pulses that travel along edges
+function spawnPulse() {
+  const a = nodes[Math.floor(Math.random() * nodes.length)];
+  const b = nodes[Math.floor(Math.random() * nodes.length)];
+  if (a === b) return;
+  const dx = b.x - a.x, dy = b.y - a.y;
+  if (Math.hypot(dx, dy) > 200) return;
+  pulses.push({ ax: a.x, ay: a.y, bx: b.x, by: b.y, p: 0, col: a.col, spd: Math.random() * 0.03 + 0.015 });
+}
+
+function drawNode(nd) {
+  const [r,g,b] = hex2rgb(nd.col);
+  const firing  = nd.firing;
+  const sz      = nd.size * (firing ? 2.4 : 1);
+  const glow    = firing ? 14 : 7;
+  const alpha   = firing ? 0.95 : (0.5 + 0.18 * Math.sin(t * 2 + nd.phase));
+
+  const gr = ctx.createRadialGradient(nd.x, nd.y, 0, nd.x, nd.y, glow);
+  gr.addColorStop(0, `rgba(${r},${g},${b},${alpha})`);
+  gr.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.beginPath(); ctx.arc(nd.x, nd.y, glow, 0, Math.PI * 2);
+  ctx.fillStyle = gr; ctx.fill();
+
+  ctx.beginPath(); ctx.arc(nd.x, nd.y, sz, 0, Math.PI * 2);
+  ctx.fillStyle = `rgba(${r},${g},${b},${Math.min(1, alpha * 1.5)})`;
+  ctx.fill();
+}
+
+function drawEdge(a, b) {
+  const dx = a.x - b.x, dy = a.y - b.y;
+  const d = Math.hypot(dx, dy);
+  if (d > 155) return;
+  const alp = (1 - d / 155) * 0.22;
+  const [ar,ag,ab] = hex2rgb(a.col);
+  const [br,bg,bb] = hex2rgb(b.col);
+  const gr = ctx.createLinearGradient(a.x, a.y, b.x, b.y);
+  gr.addColorStop(0, `rgba(${ar},${ag},${ab},${alp})`);
+  gr.addColorStop(1, `rgba(${br},${bg},${bb},${alp})`);
+  ctx.beginPath();
+  ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y);
+  ctx.strokeStyle = gr; ctx.lineWidth = 0.5; ctx.stroke();
+}
+
+function drawPulse(p) {
+  const x = p.ax + (p.bx - p.ax) * p.p;
+  const y = p.ay + (p.by - p.ay) * p.p;
+  const [r,g,b] = hex2rgb(p.col);
+  const gr = ctx.createRadialGradient(x, y, 0, x, y, 5);
+  gr.addColorStop(0, `rgba(${r},${g},${b},0.9)`);
+  gr.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.beginPath(); ctx.arc(x, y, 5, 0, Math.PI * 2);
+  ctx.fillStyle = gr; ctx.fill();
+}
+
+function drawCenterGlow() {
+  const cx = W * 0.5, cy = H * 0.48;
+  const pulse = 0.15 + 0.09 * Math.sin(t * 2.8);
+  const gr = ctx.createRadialGradient(cx, cy, 0, cx, cy, 100);
+  gr.addColorStop(0, `rgba(200,210,255,${pulse})`);
+  gr.addColorStop(0.35, `rgba(60,60,200,${pulse * 0.4})`);
+  gr.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.beginPath(); ctx.arc(cx, cy, 100, 0, Math.PI * 2);
+  ctx.fillStyle = gr; ctx.fill();
+
+  // occasional lightning bolt
+  if (Math.random() < 0.05) {
+    const nd = nodes[Math.floor(Math.random() * nodes.length)];
+    ctx.beginPath();
+    ctx.moveTo(cx + (Math.random()-0.5)*30, cy + (Math.random()-0.5)*30);
+    ctx.lineTo(nd.x, nd.y);
+    ctx.strokeStyle = `rgba(255,255,255,${Math.random() * 0.22})`;
+    ctx.lineWidth = 0.4; ctx.stroke();
+  }
+}
+
+function frame() {
+  requestAnimationFrame(frame);
+  t += 0.016;
+
+  ctx.fillStyle = 'rgba(0,0,0,0.13)';
+  ctx.fillRect(0, 0, W, H);
+
+  drawCenterGlow();
+
+  // update nodes
+  nodes.forEach(nd => {
+    nd.fireT -= 0.016;
+    if (nd.fireT <= 0) {
+      nd.firing = !nd.firing;
+      nd.fireT  = nd.firing ? (Math.random() * 1.2 + 0.4) : (Math.random() * 4 + 2.5);
+    }
+    nd.x = nd.bx + Math.sin(t * nd.spd + nd.phase) * nd.drift;
+    nd.y = nd.by + Math.cos(t * nd.spd * 0.71 + nd.phase) * nd.drift;
+  });
+
+  // edges
+  for (let i = 0; i < nodes.length; i++)
+    for (let j = i + 1; j < nodes.length; j++)
+      drawEdge(nodes[i], nodes[j]);
+
+  // spawn pulses occasionally
+  if (Math.random() < 0.15) spawnPulse();
+
+  // update & draw pulses
+  pulses = pulses.filter(p => {
+    p.p += p.spd;
+    if (p.p >= 1) return false;
+    drawPulse(p);
+    return true;
+  });
+
+  // nodes on top
+  nodes.forEach(drawNode);
+}
+frame();
+
+
+// ══════════════════════════════════════════════════
+//  UI Logic
+// ══════════════════════════════════════════════════
+
+// Uptime counter
+let startTime = Date.now();
+function updateUptime() {
+  const s = Math.floor((Date.now() - startTime) / 1000);
+  const hh = String(Math.floor(s / 3600)).padStart(2, '0');
+  const mm = String(Math.floor((s % 3600) / 60)).padStart(2, '0');
+  const ss = String(s % 60).padStart(2, '0');
+  document.getElementById('sb-uptime').textContent = `${hh}:${mm}:${ss}`;
+}
+setInterval(updateUptime, 1000);
+
+// Jitter live metrics
+function jitterMetrics() {
+  const nc = 1800 + Math.floor(Math.random() * 100);
+  document.getElementById('neuron-count').textContent = nc.toLocaleString();
+  document.getElementById('fire-rate').textContent = (0.6 + Math.random() * 0.4).toFixed(1) + 'k/s';
+  document.getElementById('conn-count').textContent = (280 + Math.floor(Math.random() * 60)).toString();
+  document.getElementById('m-cpu').textContent = (1 + Math.floor(Math.random() * 6)) + '%';
+  document.getElementById('m-ops').textContent = (800 + Math.floor(Math.random() * 100)) + '/s';
+}
+setInterval(jitterMetrics, 1500);
+
+// Activity graph
+const actSegs = document.querySelectorAll('.act-seg');
+function updateGraph() {
+  actSegs.forEach(seg => {
+    seg.classList.toggle('on', Math.random() < 0.55);
+  });
+}
+setInterval(updateGraph, 300);
+
+// Section chip rotation
+const SECTION_IDS = ['s-sales','s-accts','s-crea','s-eng','s-res','s-ops','s-fin','s-comm'];
+let activeChip = 0;
+function rotateChip() {
+  document.getElementById(SECTION_IDS[activeChip]).classList.remove('active');
+  activeChip = (activeChip + 1) % SECTION_IDS.length;
+  document.getElementById(SECTION_IDS[activeChip]).classList.add('active');
+}
+document.getElementById(SECTION_IDS[0]).classList.add('active');
+setInterval(rotateChip, 2000);
+
+// Agent progress bars & completion
+const agents = [
+  { prog: 'ap1', status: 'as1', progress: Math.random() * 50 + 10 },
+  { prog: 'ap2', status: 'as2', progress: Math.random() * 50 + 10 },
+  { prog: 'ap3', status: 'as3', progress: Math.random() * 50 + 10 },
+  { prog: 'ap4', status: 'as4', progress: Math.random() * 50 + 10 },
+  { prog: 'ap5', status: 'as5', progress: Math.random() * 50 + 10 },
+  { prog: 'ap6', status: 'as6', progress: Math.random() * 50 + 10 },
+];
+let tasksDone = 0;
+
+agents.forEach(a => {
+  document.getElementById(a.prog).style.width = a.progress + '%';
+});
+
+function tickAgents() {
+  let active = 0;
+  agents.forEach(a => {
+    const statusEl = document.getElementById(a.status);
+    if (statusEl.classList.contains('running')) {
+      active++;
+      a.progress = Math.min(100, a.progress + Math.random() * 3 + 0.5);
+      document.getElementById(a.prog).style.width = a.progress + '%';
+      if (a.progress >= 100) {
+        statusEl.className = 'a-status complete';
+        statusEl.textContent = '✓ complete';
+        tasksDone++;
+        document.getElementById('tasks-done').textContent = tasksDone + ' TASK' + (tasksDone!==1?'S':'') + ' DONE';
+        document.getElementById('sb-tasks').textContent = tasksDone;
+        // reset after a delay
+        setTimeout(() => {
+          a.progress = Math.random() * 15;
+          document.getElementById(a.prog).style.width = a.progress + '%';
+          statusEl.className = 'a-status running';
+          statusEl.textContent = 'running...';
+        }, 4000 + Math.random() * 4000);
+      }
+    }
+  });
+  const running = agents.filter(a => document.getElementById(a.status).classList.contains('running')).length;
+  document.getElementById('agent-active').textContent = running + ' AGENT' + (running!==1?'S':'') + ' ACTIVE';
+  document.getElementById('sb-agents').textContent = running;
+}
+setInterval(tickAgents, 800);
+
+// View cycling — live counter, info panels, word flash
+const WORDS = ['CODE', 'AND', 'DRIVING,', 'THAT', 'BUSINESS.', 'PROJECT', 'SIR.'];
+let view = 0, wordIdx = 0;
+const wordEl   = document.getElementById('word-flash');
+const infoYou  = document.getElementById('info-you');
+const infoBiz  = document.getElementById('info-biz');
+
+function cycleView() {
+  view = (view + 1) % 7;
+  document.getElementById('live-txt').textContent = `LIVE 0${view + 1} / 07`;
+
+  // word flash
+  wordEl.textContent = WORDS[wordIdx++ % WORDS.length];
+  wordEl.style.opacity = '1';
+  setTimeout(() => { wordEl.style.opacity = '0'; }, 2000);
+
+  // info panels
+  const showInfo = view >= 3 && view <= 5;
+  infoYou.style.opacity = showInfo ? '1' : '0';
+  infoBiz.style.opacity = view >= 4 && view <= 5 ? '1' : '0';
+}
+setInterval(cycleView, 6500);
+cycleView();
+
+// Terminal typing messages
+const TERMINAL_MSGS = [
+  'LISTENING FOR "HEY ZERO"...',
+  'QUALIFYING NEW GHL LEAD...',
+  'DRAFTING OUTREACH BATCH...',
+  'SCANNING AI TOOL RELEASES...',
+  'RENDERING AD CREATIVE...',
+  'AUDITING CLIENT PIPELINE...',
+  'WRITING WEEKLY ROLLUP...',
+  'ALL AGENTS RUNNING · PARALLEL MINDS ACTIVE',
+  'PERSISTENT MEMORY · CONTEXT LOADED',
+  'PYTHON · LOCAL-FIRST · FREE MODEL',
+];
+let tIdx = 0;
+const tEl = document.getElementById('t-text');
+function nextTermMsg() {
+  tEl.textContent = TERMINAL_MSGS[tIdx++ % TERMINAL_MSGS.length];
+}
+setInterval(nextTermMsg, 3500);
+</script>
+</body>
+</html>
