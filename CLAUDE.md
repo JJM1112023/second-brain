@@ -36,6 +36,9 @@ This is a curated "Awesome" list repository — a collection of tools, manuals, 
 ├── sw.js                    # Service worker (offline precache + runtime caching)
 ├── icons/                   # Generated PWA icons (icon-192/512, maskable-512, favicon-64)
 │
+├── zero-brain/
+│   └── index.html           # Z.E.R.O. AI Jarvis neural-brain dashboard (standalone HTML, own GitHub Pages deploy)
+│
 ├── src/                     # Bash utility scripts (real, working scripts)
 │   ├── syshealth.sh         #   system health report (load, memory, disk, services)
 │   ├── diskusage.sh         #   disk usage reporter with alert thresholds
@@ -230,15 +233,13 @@ Key conventions:
 
 The `/review` skill (`.claude/skills/review/`) automates this write-review-fix loop for a shell script or the current branch diff.
 
-## Claude Code Features Available
+## Claude Code Tooling
 
-### Importing other files
+### Configured Hooks (`.claude/settings.json`)
 
-CLAUDE.md can import additional context files using `@path/to/file` syntax:
-```markdown
-See @README.md for the current list content.
-See @CONTRIBUTING.md for contribution rules.
-```
+**PostToolUse** (runs after every Edit/Write):
+- ShellCheck — auto-lints any file edited under `src/`, `lib/`, or `bin/`
+- Link checker — runs `.claude/hooks/check-readme-links.sh` to validate URLs in README.md
 
 ### CLAUDE.local.md
 
