@@ -2,7 +2,7 @@
 # Runs after edits — validates that all href links in README.md are well-formed.
 # Non-http links (relative paths, empty hrefs) indicate a broken or missing URL.
 
-if echo "${CLAUDE_TOOL_RESULT:-}" | grep -q "README.md"; then
+if [[ "${CLAUDE_FILE_PATH:-}" == *README.md ]]; then
   python3 - <<'EOF'
 import re, sys
 

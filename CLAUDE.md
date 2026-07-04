@@ -29,6 +29,7 @@ This is a curated "Awesome" list repository — a collection of tools, manuals, 
 ├── .travis.yml              # CI configuration (ShellCheck on master/testing)
 ├── .gitignore               # Ignores log/ directory
 ├── _config.yml              # GitHub Pages config (serves index.html, excludes docs/scripts)
+├── verify.sh                # Standalone environment verification script (prereqs/services checks)
 │
 ├── index.html               # Immersive 3D "Codex" landing page (GitHub Pages / PWA shell)
 ├── manifest.webmanifest     # PWA manifest (name, icons, display mode)
@@ -58,7 +59,7 @@ This is a curated "Awesome" list repository — a collection of tools, manuals, 
 ├── .claude/
 │   ├── settings.json        # Hooks: PostToolUse shellcheck + README link check, Stop reminder
 │   ├── hooks/               # check-readme-links.sh (validates README hrefs after edits)
-│   ├── skills/              # Reusable workflow skills (SKILL.md files, incl. add-entry)
+│   ├── skills/              # Reusable workflow skills (SKILL.md files: add-entry, review, ...)
 │   └── agents/              # Custom subagents (e.g. readme-reviewer.md)
 │
 └── doc/
@@ -141,7 +142,7 @@ If a non-critical warning like SC2154 appears and cannot be fixed, suppress it i
 # shellcheck disable=SC2154
 ```
 
-The `.claude/settings.json` **PostToolUse** hook automatically runs ShellCheck on any edited file under `src/`, `lib/`, or `bin/`.
+The `.claude/settings.json` **PostToolUse** hook automatically runs ShellCheck on any edited `.sh` file (and anything under `src/`, `lib/`, or `bin/`).
 
 ### PWA validation
 
@@ -209,11 +210,25 @@ References:
 
 Key conventions:
 - Use `#!/usr/bin/env bash` (not `#!/bin/bash`)
-- Start scripts with `set -euo pipefail`
+- Use `set -euo pipefail` at the top of every script for safe error handling
 - Source the shared lib relative to the script: `source "$(dirname "${BASH_SOURCE[0]}")/../lib/common.sh"`
 - `lib/common.sh` is **sourced, not executed** — don't add a shebang-driven entry point there
 - Use `su -` for root login (not `su`)
 - All scripts must pass `shellcheck -s bash -e 1072,1094 -x`
+- Anchor `.env` key lookups with `^KEY=` and use `cut -d= -f2-` to preserve values containing `=`
+- Never rely on `|| fallback` at the end of a pipeline — check emptiness explicitly with `[ -z "$VAR" ]`
+
+## Code Review
+
+**IMPORTANT: Before requesting human review or committing any shell script, run a self-review pass:**
+
+1. Re-read the script top-to-bottom and ask: what input, state, or environment makes each line wrong?
+2. Check all grep patterns are anchored and won't match unintended substrings
+3. Check all pipeline fallbacks (`|| default`) actually fire when expected (they don't when the last command in the pipe exits 0)
+4. Verify every exit code that matters is captured, not silently swallowed with `&>/dev/null`
+5. Confirm all relative paths are guarded with a CWD check or `cd "$(dirname "$0")"`
+
+The `/review` skill (`.claude/skills/review/`) automates this write-review-fix loop for a shell script or the current branch diff.
 
 ## Claude Code Features Available
 
@@ -232,12 +247,12 @@ Create `CLAUDE.local.md` in the project root for personal session overrides (e.g
 ### Hooks (active)
 
 `.claude/settings.json` defines these hooks, which run automatically:
-- **PostToolUse** (after `Edit`/`Write`) — runs ShellCheck on edited `src/`/`lib/`/`bin/` files, and runs `.claude/hooks/check-readme-links.sh` to validate README links.
+- **PostToolUse** (after `Edit`/`Write`) — runs ShellCheck on edited `.sh`/`src/`/`lib/`/`bin/` files, and runs `.claude/hooks/check-readme-links.sh` to validate README links.
 - **Stop** — warns if the last commit is missing the required signed-off-by line.
 
 ### Skills
 
-`.claude/skills/<name>/SKILL.md` holds reusable workflows. The repo-specific one is **`add-entry`** (adds a README entry in the correct format); the rest are a large library of AI-tooling/workflow skills.
+`.claude/skills/<name>/SKILL.md` holds reusable workflows. Repo-specific ones include **`add-entry`** (adds a README entry in the correct format) and **`review`** (shell-script write-review-fix loop); the rest are a large library of AI-tooling/workflow skills.
 
 ### Subagents
 

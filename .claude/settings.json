@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash -c 'file=\"$(echo \"$CLAUDE_TOOL_RESULT\" | grep -o '\"'\"'[^\"]*'\"'\"' | head -1)\"; if [[ \"$file\" == */src/* || \"$file\" == */lib/* || \"$file\" == */bin/* ]]; then shellcheck -s bash -e 1072,1094 -x \"$file\" && echo \"shellcheck: OK\" || echo \"shellcheck: FAILED — fix errors before committing\"; fi'"
+            "command": "bash -c 'file=\"$CLAUDE_FILE_PATH\"; if [[ \"$file\" == *.sh || \"$file\" == */src/* || \"$file\" == */lib/* || \"$file\" == */bin/* ]]; then shellcheck -s bash -e 1072,1094 -x \"$file\" && echo \"shellcheck: OK\" || echo \"shellcheck: FAILED — fix errors before committing\"; fi'"
           },
           {
             "type": "command",
