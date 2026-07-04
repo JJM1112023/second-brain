@@ -18,7 +18,7 @@ body {
   user-select: none;
 }
 
-canvas#c { position: fixed; inset: 0; cursor: grab; }
+canvas#c { position: fixed; inset: 0; cursor: grab; touch-action: none; }
 canvas#c.dragging { cursor: grabbing; }
 
 /* ── HUD wrapper ────────────────────────────────── */
@@ -66,6 +66,8 @@ canvas#c.dragging { cursor: grabbing; }
   font-size: 7.5px; letter-spacing: 1px;
   display: inline-flex; align-items: center; gap: 5px;
   color: #555;
+  pointer-events: auto;
+  cursor: pointer;
 }
 .mic-dot { width: 5px; height: 5px; border-radius: 50%; background: #333; }
 .mic-chip.live .mic-dot { background: #4f8; animation: blink 2s ease-in-out infinite; }
@@ -437,7 +439,7 @@ canvas#c.dragging { cursor: grabbing; }
     </div>
   </div>
 
-  <div class="hint">DRAG TO ORBIT · SCROLL TO ZOOM · CLICK A REGION TO FOCUS · SAY "HEY ZERO" OR PRESS SPACE</div>
+  <div class="hint">DRAG TO ORBIT · PINCH OR SCROLL TO ZOOM · TAP A REGION TO FOCUS · SAY "HEY ZERO" · HOLD SCREEN OR PRESS SPACE TO WAKE</div>
 
   <!-- ── Word Flash ── -->
   <div class="word-flash" id="word-flash"></div>
@@ -606,24 +608,64 @@ function focusRegion(reg, el) {
   blip(660, 0.08);
 }
 
-// ── Interaction: drag orbit, wheel zoom ──
-let dragging = false, lastX = 0, lastY = 0;
+// ── Interaction: drag orbit, pinch/wheel zoom, hold-to-wake ──
+const pointers = new Map();   // pointerId → {sx, sy, x, y}
+let dragging = false, lastX = 0, lastY = 0, lastPinch = 0, lpTimer = null;
+
+canvas.addEventListener('contextmenu', e => e.preventDefault());
+
 canvas.addEventListener('pointerdown', e => {
-  dragging = true; lastX = e.clientX; lastY = e.clientY;
-  canvas.classList.add('dragging');
-  cam.auto = false;
+  pointers.set(e.pointerId, { sx: e.clientX, sy: e.clientY, x: e.clientX, y: e.clientY });
+  clearTimeout(lpTimer);
+  if (pointers.size === 1) {
+    dragging = true; lastX = e.clientX; lastY = e.clientY;
+    canvas.classList.add('dragging');
+    cam.auto = false;
+    // hold still ~650ms → wake (phone equivalent of spacebar)
+    lpTimer = setTimeout(() => {
+      if (pointers.size === 1) {
+        wake();
+        if (navigator.vibrate) navigator.vibrate(30);
+      }
+    }, 650);
+  } else if (pointers.size === 2) {
+    const [a, b] = [...pointers.values()];
+    lastPinch = Math.hypot(a.x - b.x, a.y - b.y);
+  }
 });
+
 window.addEventListener('pointermove', e => {
-  if (!dragging) return;
-  cam.tYaw += (e.clientX - lastX) * 0.005;
-  cam.tPitch = Math.max(-1.2, Math.min(1.2, cam.tPitch + (e.clientY - lastY) * 0.005));
-  lastX = e.clientX; lastY = e.clientY;
+  const p = pointers.get(e.pointerId);
+  if (!p) return;
+  p.x = e.clientX; p.y = e.clientY;
+  if (Math.hypot(p.x - p.sx, p.y - p.sy) > 12) clearTimeout(lpTimer);
+  if (pointers.size === 1 && dragging) {
+    cam.tYaw += (e.clientX - lastX) * 0.005;
+    cam.tPitch = Math.max(-1.2, Math.min(1.2, cam.tPitch + (e.clientY - lastY) * 0.005));
+    lastX = e.clientX; lastY = e.clientY;
+  } else if (pointers.size === 2) {
+    const [a, b] = [...pointers.values()];
+    const d = Math.hypot(a.x - b.x, a.y - b.y);
+    if (lastPinch > 0) {
+      cam.tZoom = Math.max(0.5, Math.min(2.2, cam.tZoom * (d / lastPinch)));
+    }
+    lastPinch = d;
+  }
 });
-window.addEventListener('pointerup', () => {
-  dragging = false;
-  canvas.classList.remove('dragging');
-  if (!focusedRegion) setTimeout(() => { if (!dragging) cam.auto = true; }, 4000);
-});
+
+function endPointer(e) {
+  pointers.delete(e.pointerId);
+  clearTimeout(lpTimer);
+  if (pointers.size < 2) lastPinch = 0;
+  if (pointers.size === 0) {
+    dragging = false;
+    canvas.classList.remove('dragging');
+    if (!focusedRegion) setTimeout(() => { if (!dragging) cam.auto = true; }, 4000);
+  }
+}
+window.addEventListener('pointerup', endPointer);
+window.addEventListener('pointercancel', endPointer);
+
 canvas.addEventListener('wheel', e => {
   e.preventDefault();
   cam.tZoom = Math.max(0.5, Math.min(2.2, cam.tZoom - e.deltaY * 0.0012));
@@ -796,17 +838,17 @@ window.addEventListener('keydown', e => {
   if (e.code === 'Space' && e.target === document.body) { e.preventDefault(); wake(); }
 });
 
-let speechLive = false;
+let speechLive = false, speechBlocked = false, recRef = null;
 (function initSpeech() {
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SR) return;                       // stays in Space-fallback mode
+  if (!SR) { micTxt.textContent = 'NO MIC API · TAP HERE OR HOLD SCREEN TO WAKE'; return; }
   try {
-    const rec = new SR();
+    const rec = recRef = new SR();
     rec.continuous = true;
     rec.interimResults = true;
     rec.lang = 'en-US';
     rec.onstart = () => {
-      speechLive = true;
+      speechLive = true; speechBlocked = false;
       if (!awake) { micChip.className = 'mic-chip live'; micTxt.textContent = 'MIC LIVE · SAY "HEY ZERO"'; }
     };
     rec.onresult = ev => {
@@ -815,15 +857,33 @@ let speechLive = false;
         if (/\bhey,?\s*zero\b|\bhay,?\s*zero\b|\bhey,?\s*hero\b/.test(txt)) wake();
       }
     };
-    rec.onerror = () => { speechLive = false; };
+    rec.onerror = ev => {
+      speechLive = false;
+      if (ev.error === 'not-allowed' || ev.error === 'service-not-allowed') {
+        speechBlocked = true;   // don't auto-retry; needs a user tap
+        micChip.className = 'mic-chip';
+        micTxt.textContent = 'TAP HERE TO ENABLE MIC';
+      }
+    };
     rec.onend = () => {
       speechLive = false;
-      if (!awake) { micChip.className = 'mic-chip'; micTxt.textContent = 'MIC OFFLINE · PRESS SPACE TO WAKE'; }
+      if (speechBlocked) return;
+      if (!awake) { micChip.className = 'mic-chip'; micTxt.textContent = 'MIC OFFLINE · TAP HERE OR HOLD SCREEN'; }
       setTimeout(() => { try { rec.start(); } catch (_) {} }, 2000);
     };
     rec.start();
-  } catch (_) { /* mic unavailable — Space fallback remains */ }
+  } catch (_) { micTxt.textContent = 'MIC UNAVAILABLE · TAP HERE OR HOLD SCREEN TO WAKE'; }
 })();
+
+// Tap the mic chip: enable the mic (user gesture unlocks it on mobile),
+// or act as a wake button when speech isn't available at all.
+micChip.addEventListener('click', () => {
+  if (recRef && !speechLive) {
+    speechBlocked = false;
+    try { recRef.start(); return; } catch (_) {}
+  }
+  if (!recRef) wake();
+});
 
 // ════════════════════════════════════════════════════════
 //  UI Logic
