@@ -21,9 +21,11 @@ WARN=0
 TOKEN=""
 API_KEY=""
 
-log_pass() { echo -e "  ${GREEN}✅ PASS${NC} — $1"; ((PASS++)); }
-log_fail() { echo -e "  ${RED}❌ FAIL${NC} — $1"; ((FAIL++)); }
-log_warn() { echo -e "  ${YELLOW}⚠️  WARN${NC} — $1"; ((WARN++)); }
+# Counters use VAR=$((VAR+1)) so the helpers always return 0 — a bare ((VAR++))
+# returns 1 on its first call and silently breaks `log_fail ... && next` chains.
+log_pass() { echo -e "  ${GREEN}✅ PASS${NC} — $1"; PASS=$((PASS+1)); }
+log_fail() { echo -e "  ${RED}❌ FAIL${NC} — $1"; FAIL=$((FAIL+1)); }
+log_warn() { echo -e "  ${YELLOW}⚠️  WARN${NC} — $1"; WARN=$((WARN+1)); }
 log_info() { echo -e "  ${CYAN}ℹ️  INFO${NC} — $1"; }
 section()  { echo -e "\n${BOLD}${BLUE}$1${NC}"; echo "$(printf '─%.0s' {1..55})"; }
 
@@ -59,7 +61,7 @@ fi
 # .env file
 if [ -f ".env" ]; then
   log_pass ".env file exists"
-  if grep -q "ANTHROPIC_API_KEY=sk-ant" .env; then
+  if grep -qE '^ANTHROPIC_API_KEY="?sk-ant' .env; then
     log_pass "ANTHROPIC_API_KEY looks valid"
   else
     log_fail "ANTHROPIC_API_KEY missing or invalid in .env"
@@ -87,7 +89,10 @@ KEY_FILES=(
 )
 MISSING=0
 for f in "${KEY_FILES[@]}"; do
-  [ ! -f "$f" ] && log_fail "Missing: $f" && ((MISSING++))
+  if [ ! -f "$f" ]; then
+    log_fail "Missing: $f"
+    MISSING=$((MISSING+1))
+  fi
 done
 [ $MISSING -eq 0 ] && log_pass "All required source files present"
 
@@ -120,6 +125,8 @@ for container in "${EXPECTED[@]}"; do
              "$container" 2>/dev/null)
     if [ -z "$HEALTH" ]; then
       log_pass "$container is running (no healthcheck configured)"
+    elif [ "$HEALTH" = "unhealthy" ]; then
+      log_fail "$container is running but health=unhealthy"
     elif [ "$HEALTH" != "healthy" ]; then
       log_warn "$container is running but health=$HEALTH"
     else
@@ -203,11 +210,13 @@ ADMIN_USER=$(grep "^ADMIN_USERNAME=" .env 2>/dev/null | head -1 | cut -d= -f2- |
 ADMIN_PASS=$(grep "^ADMIN_PASSWORD=" .env 2>/dev/null | head -1 | cut -d= -f2- | tr -d '"')
 [ -z "$ADMIN_PASS" ] && ADMIN_PASS="admin123"
 
-# JWT Login
+# JWT Login — build the payload with json.dumps so credentials containing
+# quotes, backslashes, or newlines can't break or alter the JSON body.
+LOGIN_PAYLOAD=$(python3 -c 'import json,sys; print(json.dumps({"username": sys.argv[1], "password": sys.argv[2]}))' "$ADMIN_USER" "$ADMIN_PASS")
 LOGIN_RESP=$(curl -sf --max-time 10 \
   -X POST http://localhost:8000/auth/login \
   -H "Content-Type: application/json" \
-  -d "{\"username\":\"$ADMIN_USER\",\"password\":\"$ADMIN_PASS\"}" \
+  -d "$LOGIN_PAYLOAD" \
   2>/dev/null)
 
 if echo "$LOGIN_RESP" | grep -q "access_token"; then
@@ -242,6 +251,8 @@ BAD=$(curl -s -o /dev/null -w "%{http_code}" --max-time 5 \
   -d '{"username":"nobody","password":"wrong"}' 2>/dev/null)
 if [ "$BAD" = "401" ]; then
   log_pass "Invalid login correctly returns 401"
+elif [[ "$BAD" == 2* ]]; then
+  log_fail "Invalid login was ACCEPTED (returned $BAD) — auth is broken"
 else
   log_warn "Invalid login returned $BAD (expected 401)"
 fi
@@ -349,6 +360,7 @@ else
     log_pass "POST /agents/coding (async) → job_id: $ASYNC_JOB"
 
     log_info "Polling job status..."
+    JOB_DONE=false
     for i in {1..10}; do
       sleep 3
       JOB_DATA=$(curl -sf --max-time 5 \
@@ -360,14 +372,19 @@ else
 
       if [ "$JOB_STATUS" = "completed" ]; then
         log_pass "GET /agents/jobs/$ASYNC_JOB → completed ✓"
+        JOB_DONE=true
         break
       elif [ "$JOB_STATUS" = "failed" ]; then
         log_fail "Job $ASYNC_JOB failed"
+        JOB_DONE=true
         break
       else
         log_info "  Attempt $i/10 — status: $JOB_STATUS"
       fi
     done
+    if ! $JOB_DONE; then
+      log_fail "Job $ASYNC_JOB never reached a terminal state after 10 polls (last status: ${JOB_STATUS:-unknown})"
+    fi
   else
     log_fail "Async job submission failed → $ASYNC"
   fi

@@ -152,7 +152,7 @@ The `pre-push` hook is the PWA gate (see above). To check manually before pushin
 - `node --check sw.js` — service worker parses
 - Confirm `index.html` still has `<link rel="manifest">` and a `serviceWorker` registration
 
-When editing PWA shell files (`index.html`, `sw.js`, `manifest.webmanifest`, `icons/`), bump the `VERSION` constant in `sw.js` (or let `post-merge` stamp `BUILD_STAMP`) so browsers refresh their cache.
+When editing PWA shell files (`index.html`, `sw.js`, `manifest.webmanifest`, `icons/`), **always bump the `VERSION` constant in `sw.js`** — the cache names (`SHELL`/`RUNTIME`) derive from it, and only a `VERSION` change rotates them. The `post-merge` hook's `BUILD_STAMP` merely byte-changes `sw.js` so browsers re-install the service worker; it does not rotate cache names and is not a substitute for a `VERSION` bump.
 
 ### CI (Travis CI)
 
