@@ -1,0 +1,14 @@
+# GitHub Pages config — serve the immersive index.html directly.
+theme: null
+plugins: []
+exclude:
+  - CLAUDE.md
+  - CONTRIBUTING.md
+  - CODE_OF_CONDUCT.md
+  - LICENSE.md
+  - bin
+  - lib
+  - src
+  - skel
+  - .travis.yml
+  - .claude

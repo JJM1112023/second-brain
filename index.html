@@ -1,0 +1,484 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<title>Awesome Ninja Admins — Immersive Codex</title>
+<meta name="description" content="A collection of awesome lists, manuals, blogs, hacks and tools for Awesome Ninja Admins — presented as an immersive 3D codex." />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;800&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#04060b;
+    --ink:#e7f0ff;
+    --dim:#8ea0bd;
+    --accent:#00ffc6;
+    --accent2:#7c5cff;
+    --danger:#ff3b6b;
+    --card:rgba(14,22,40,.55);
+    --card-brd:rgba(124,92,255,.35);
+    --card-glow:rgba(0,255,198,.35);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:'Space Grotesk',system-ui,sans-serif;overflow-x:hidden}
+  a{color:var(--accent);text-decoration:none}
+  a:hover{text-decoration:underline}
+  code,.mono{font-family:'JetBrains Mono',ui-monospace,Menlo,monospace}
+
+  /* ---------- 3D background canvas ---------- */
+  #bg{position:fixed;inset:0;z-index:0;pointer-events:none}
+  .vignette{position:fixed;inset:0;z-index:1;pointer-events:none;
+    background:radial-gradient(ellipse at center,transparent 40%,rgba(0,0,0,.75) 100%);}
+  .scanlines{position:fixed;inset:0;z-index:2;pointer-events:none;opacity:.06;mix-blend-mode:overlay;
+    background:repeating-linear-gradient(to bottom,transparent 0 2px,#fff 2px 3px);}
+
+  /* ---------- HUD chrome ---------- */
+  header.hud{
+    position:sticky;top:0;z-index:20;
+    display:flex;align-items:center;gap:16px;
+    padding:14px 22px;
+    background:linear-gradient(180deg,rgba(4,6,11,.85),rgba(4,6,11,.35));
+    backdrop-filter:blur(14px);
+    border-bottom:1px solid rgba(124,92,255,.25);
+  }
+  .brand{display:flex;align-items:center;gap:10px;font-family:'JetBrains Mono';font-weight:800;letter-spacing:.08em;text-transform:uppercase;font-size:14px}
+  .brand .dot{width:10px;height:10px;border-radius:50%;background:var(--accent);box-shadow:0 0 12px var(--accent);animation:pulse 2s infinite}
+  @keyframes pulse{50%{opacity:.35;transform:scale(.85)}}
+  .brand em{color:var(--accent2);font-style:normal}
+  .search{
+    flex:1;max-width:520px;position:relative;
+  }
+  .search input{
+    width:100%;padding:10px 14px 10px 40px;
+    background:rgba(10,14,26,.7);border:1px solid rgba(124,92,255,.35);
+    color:var(--ink);border-radius:10px;font-family:'JetBrains Mono';font-size:13px;outline:none;
+    transition:.2s border-color,.2s box-shadow;
+  }
+  .search input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(0,255,198,.15)}
+  .search svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);opacity:.6}
+  .hud-actions{display:flex;gap:8px;align-items:center;font-family:'JetBrains Mono';font-size:12px;color:var(--dim)}
+  .kbd{border:1px solid rgba(255,255,255,.15);border-bottom-width:2px;border-radius:5px;padding:2px 6px;background:rgba(255,255,255,.04)}
+
+  /* ---------- Hero ---------- */
+  .hero{
+    position:relative;z-index:5;
+    min-height:calc(100vh - 60px);
+    display:grid;place-items:center;
+    padding:80px 24px 40px;
+    text-align:center;
+  }
+  .hero h1{
+    margin:0;
+    font-family:'JetBrains Mono';
+    font-weight:800;
+    font-size:clamp(38px,7vw,96px);
+    line-height:1.02;
+    letter-spacing:-.02em;
+    background:linear-gradient(180deg,#fff 0%,#8ea0bd 100%);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    text-shadow:0 0 40px rgba(124,92,255,.35);
+  }
+  .hero .accent{
+    background:linear-gradient(90deg,var(--accent),var(--accent2));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    display:block;
+  }
+  .hero p{max-width:680px;margin:24px auto 0;color:var(--dim);font-size:clamp(15px,1.6vw,19px);line-height:1.55}
+  .hero-tags{margin-top:26px;display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+  .tag{
+    font-family:'JetBrains Mono';font-size:11px;letter-spacing:.1em;text-transform:uppercase;
+    padding:6px 10px;border-radius:99px;
+    border:1px solid rgba(0,255,198,.35);
+    background:rgba(0,255,198,.06);color:var(--accent);
+  }
+  .hero-cta{margin-top:36px;display:flex;flex-wrap:wrap;gap:12px;justify-content:center}
+  .btn{
+    font-family:'JetBrains Mono';font-weight:600;font-size:13px;letter-spacing:.06em;text-transform:uppercase;
+    padding:12px 20px;border-radius:10px;cursor:pointer;
+    border:1px solid rgba(124,92,255,.4);
+    background:rgba(124,92,255,.1);color:var(--ink);
+    transition:.2s all;text-decoration:none;
+  }
+  .btn:hover{transform:translateY(-2px);background:rgba(124,92,255,.25);box-shadow:0 10px 30px rgba(124,92,255,.3)}
+  .btn.primary{background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;color:#04060b}
+  .btn.primary:hover{box-shadow:0 10px 30px rgba(0,255,198,.4)}
+  .scroll-hint{
+    position:absolute;bottom:24px;left:50%;transform:translateX(-50%);
+    color:var(--dim);font-family:'JetBrains Mono';font-size:11px;letter-spacing:.2em;text-transform:uppercase;
+    display:flex;flex-direction:column;align-items:center;gap:8px;animation:float 2.4s ease-in-out infinite;
+  }
+  @keyframes float{50%{transform:translate(-50%,8px)}}
+
+  /* ---------- Stats strip ---------- */
+  .stats{
+    position:relative;z-index:5;
+    display:grid;grid-template-columns:repeat(4,1fr);gap:14px;
+    max-width:1200px;margin:0 auto;padding:0 24px 40px;
+  }
+  .stat{
+    border:1px solid rgba(124,92,255,.25);border-radius:14px;
+    background:linear-gradient(180deg,rgba(14,22,40,.7),rgba(14,22,40,.35));
+    padding:18px 20px;backdrop-filter:blur(6px);
+  }
+  .stat .n{font-family:'JetBrains Mono';font-weight:800;font-size:28px;color:var(--accent)}
+  .stat .l{color:var(--dim);font-size:12px;letter-spacing:.14em;text-transform:uppercase;margin-top:4px}
+
+  /* ---------- Categories grid (3D tilt cards) ---------- */
+  .section-head{
+    position:relative;z-index:5;max-width:1200px;margin:20px auto 20px;padding:0 24px;
+    display:flex;align-items:baseline;justify-content:space-between;gap:16px;flex-wrap:wrap;
+  }
+  .section-head h2{font-family:'JetBrains Mono';font-size:14px;letter-spacing:.24em;text-transform:uppercase;color:var(--dim);margin:0}
+  .section-head h2 b{color:var(--ink)}
+  .filters{display:flex;flex-wrap:wrap;gap:6px}
+  .chip{
+    font-family:'JetBrains Mono';font-size:11px;letter-spacing:.1em;text-transform:uppercase;
+    padding:6px 10px;border-radius:99px;cursor:pointer;
+    border:1px solid rgba(255,255,255,.12);color:var(--dim);background:transparent;transition:.2s;
+  }
+  .chip:hover{color:var(--ink);border-color:var(--accent)}
+  .chip.active{background:var(--accent);color:#04060b;border-color:var(--accent)}
+
+  .grid{
+    position:relative;z-index:5;
+    display:grid;gap:20px;
+    grid-template-columns:repeat(auto-fill,minmax(280px,1fr));
+    max-width:1200px;margin:0 auto;padding:0 24px 60px;
+    perspective:1200px;
+  }
+  .card{
+    position:relative;
+    border-radius:18px;padding:22px 20px 20px;
+    background:var(--card);
+    border:1px solid var(--card-brd);
+    backdrop-filter:blur(10px);
+    transform-style:preserve-3d;
+    transition:transform .2s ease-out, box-shadow .3s, border-color .3s;
+    cursor:pointer;
+    overflow:hidden;
+    min-height:180px;
+    display:flex;flex-direction:column;
+  }
+  .card::before{
+    content:"";position:absolute;inset:0;pointer-events:none;
+    background:radial-gradient(400px circle at var(--mx,50%) var(--my,50%),rgba(0,255,198,.14),transparent 45%);
+    opacity:0;transition:.25s opacity;
+  }
+  .card:hover::before{opacity:1}
+  .card:hover{border-color:var(--accent);box-shadow:0 25px 60px rgba(0,255,198,.15),0 0 0 1px rgba(0,255,198,.35)}
+  .card .idx{
+    font-family:'JetBrains Mono';font-size:11px;color:var(--dim);letter-spacing:.16em;
+  }
+  .card h3{
+    font-family:'JetBrains Mono';font-size:20px;margin:8px 0 10px;letter-spacing:-.01em;
+    transform:translateZ(30px);
+  }
+  .card p{color:var(--dim);font-size:14px;line-height:1.5;margin:0;flex:1;transform:translateZ(20px)}
+  .card .foot{
+    margin-top:14px;display:flex;align-items:center;justify-content:space-between;font-family:'JetBrains Mono';font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);
+    transform:translateZ(30px);
+  }
+  .card .foot .arrow{transition:.2s transform}
+  .card:hover .foot .arrow{transform:translateX(6px)}
+  .card .subs{
+    margin-top:12px;display:flex;flex-wrap:wrap;gap:6px;
+  }
+  .card .sub{
+    font-family:'JetBrains Mono';font-size:10px;letter-spacing:.1em;text-transform:uppercase;
+    padding:4px 8px;border-radius:99px;background:rgba(124,92,255,.15);color:#c4b7ff;border:1px solid rgba(124,92,255,.3);
+  }
+  .card .glyph{
+    position:absolute;right:16px;top:16px;font-family:'JetBrains Mono';font-size:12px;color:var(--dim);opacity:.7;
+  }
+
+  /* ---------- Footer ---------- */
+  footer{
+    position:relative;z-index:5;padding:40px 24px 60px;text-align:center;color:var(--dim);font-family:'JetBrains Mono';font-size:12px;letter-spacing:.1em;
+    border-top:1px solid rgba(124,92,255,.15);margin-top:20px;
+  }
+  footer a{color:var(--accent)}
+
+  /* ---------- Reveal on scroll ---------- */
+  .reveal{opacity:0;transform:translateY(30px);transition:.7s cubic-bezier(.2,.7,.2,1)}
+  .reveal.in{opacity:1;transform:none}
+
+  /* ---------- Motion prefs ---------- */
+  @media (prefers-reduced-motion:reduce){
+    *{animation:none!important;transition:none!important}
+    .reveal{opacity:1;transform:none}
+  }
+  @media (max-width:720px){
+    .stats{grid-template-columns:repeat(2,1fr)}
+    .hud-actions{display:none}
+  }
+</style>
+</head>
+<body>
+<canvas id="bg"></canvas>
+<div class="vignette"></div>
+<div class="scanlines"></div>
+
+<header class="hud">
+  <div class="brand"><span class="dot"></span>Ninja&nbsp;Admins <em>// Codex</em></div>
+  <div class="search">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+    <input id="q" type="text" placeholder="Search tools, categories, tags…" autocomplete="off" spellcheck="false" />
+  </div>
+  <div class="hud-actions">
+    <span>Press</span><span class="kbd">/</span><span>to search</span>
+  </div>
+</header>
+
+<section class="hero">
+  <div>
+    <h1>Awesome Ninja Admins <span class="accent">// Immersive Codex</span></h1>
+    <p>A curated arsenal of lists, manuals, blogs, hacks and tools for engineers who live in the terminal. Now rendered as a fully interactive 3D control room.</p>
+    <div class="hero-tags">
+      <span class="tag">CLI</span><span class="tag">DevOps</span><span class="tag">Security</span>
+      <span class="tag">Kubernetes</span><span class="tag">AI Agents</span><span class="tag">Cloud</span>
+    </div>
+    <div class="hero-cta">
+      <a class="btn primary" href="#collection">Enter the Codex →</a>
+      <a class="btn" href="https://github.com/JJM1112023/awesome-ninja-admins" target="_blank" rel="noopener">Star on GitHub</a>
+      <a class="btn" href="https://github.com/JJM1112023/awesome-ninja-admins#readme" target="_blank" rel="noopener">View README</a>
+    </div>
+  </div>
+  <div class="scroll-hint">Scroll ▾</div>
+</section>
+
+<div class="stats reveal">
+  <div class="stat"><div class="n" data-count="14">0</div><div class="l">Top Categories</div></div>
+  <div class="stat"><div class="n" data-count="45">0</div><div class="l">Sub-Domains</div></div>
+  <div class="stat"><div class="n" data-count="500" data-suffix="+">0</div><div class="l">Curated Tools</div></div>
+  <div class="stat"><div class="n" data-count="1" data-prefix="v">0</div><div class="l">Immersive Build</div></div>
+</div>
+
+<div class="section-head reveal" id="collection">
+  <h2>// <b>Collection</b> — pick a domain to dive in</h2>
+  <div class="filters" id="filters">
+    <button class="chip active" data-f="all">All</button>
+    <button class="chip" data-f="ops">Ops</button>
+    <button class="chip" data-f="sec">Security</button>
+    <button class="chip" data-f="dev">Dev</button>
+    <button class="chip" data-f="learn">Learn</button>
+  </div>
+</div>
+
+<main class="grid reveal" id="grid"></main>
+
+<footer>
+  <div>Forked from <a href="https://github.com/trimstray/awesome-ninja-admins" target="_blank" rel="noopener">trimstray/awesome-ninja-admins</a> · Maintained by <a href="https://github.com/JJM1112023" target="_blank" rel="noopener">JJM1112023</a></div>
+  <div style="margin-top:6px;opacity:.6">Immersive shell rendered with Three.js · GPL v3</div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+<script>
+/* ============================================================
+   CATEGORY DATA (kept in sync with README.md anchors)
+============================================================ */
+const CATS = [
+  {id:"cli-tools", tag:"ops", title:"CLI Tools", glyph:"$_", subs:["Shells","Managers","Text & Search","Network","Databases"],
+    desc:"Modern shells, package managers, network utilities, and database CLIs that live at the heart of every terminal workflow."},
+  {id:"web-tools", tag:"ops", title:"Web Tools", glyph:"⌘", subs:["SSL","HTTP Headers","DNS","Mail","Mass scanners","Net-tools","Performance","Passwords"],
+    desc:"Recon, TLS, DNS, headers, mail, mass scanners, perf and password tooling for anyone who runs anything on port 443."},
+  {id:"manualshowtostutorials", tag:"learn", title:"Manuals · Howtos · Tutorials", glyph:"📖", subs:["Bash","Unix","AI Tools & Agents","Hacking"],
+    desc:"Deep-dive guides for Bash, Unix, hacking and the new frontier of AI agents. Bookmark-worthy references."},
+  {id:"blogs", tag:"learn", title:"Blogs", glyph:"✎", subs:["Sysadmin","SRE","Security"],
+    desc:"Curated writing from operators who actually run systems in production. Signal, not noise."},
+  {id:"systemsservices", tag:"ops", title:"Systems & Services", glyph:"⚙", subs:["Systems","HTTP(s) Services","Security/hardening"],
+    desc:"Reference stacks and hardening guides for Linux/BSD, HTTP services and system-level security."},
+  {id:"monitoringobservability", tag:"ops", title:"Monitoring & Observability", glyph:"◉", subs:["System Monitoring","Log Management"],
+    desc:"Metrics, logs, traces. Everything you need to know why the pager is going off at 03:00."},
+  {id:"devops--cloud", tag:"dev", title:"DevOps & Cloud", glyph:"☁", subs:["Kubernetes","IaC","CI/CD","Cloud CLIs","Service Mesh"],
+    desc:"Kubernetes, Terraform, CI/CD, cloud CLIs and service mesh — the operating system of modern infrastructure."},
+  {id:"infrastructure", tag:"ops", title:"Infrastructure", glyph:"▦", subs:["Containers","Config Mgmt","Backup","VPN"],
+    desc:"Containers, virtualization, configuration management, backup/recovery and VPN — the load-bearing wall of every stack."},
+  {id:"security", tag:"sec", title:"Security", glyph:"🛡", subs:["IAM","Firewall","Net Troubleshooting","Pentest"],
+    desc:"Identity, network security, troubleshooting and offensive-security tooling — for defenders who think like attackers."},
+  {id:"one-liners", tag:"learn", title:"One-liners", glyph:"❯", subs:["awk","sed","find","grep","xargs"],
+    desc:"Terse, powerful commands that solve problems in one line. Copy, paste, respect."},
+  {id:"lists", tag:"learn", title:"Lists", glyph:"≡", subs:["Awesome-*","Cheatsheets","Reference"],
+    desc:"Other awesome lists and cheat-sheets worth linking to from this one."},
+  {id:"other", tag:"learn", title:"Other", glyph:"✧", subs:["Misc","Fun","Hardware"],
+    desc:"Everything that refused to fit in a box. The best category, honestly."}
+];
+
+/* ============================================================
+   RENDER GRID
+============================================================ */
+const grid = document.getElementById("grid");
+CATS.forEach((c,i)=>{
+  const el = document.createElement("a");
+  el.className = "card";
+  el.dataset.tag = c.tag;
+  el.dataset.name = (c.title+" "+c.subs.join(" ")).toLowerCase();
+  el.href = "https://github.com/JJM1112023/awesome-ninja-admins#"+c.id;
+  el.target = "_blank"; el.rel = "noopener";
+  el.innerHTML = `
+    <span class="glyph mono">${c.glyph}</span>
+    <div class="idx mono">${String(i+1).padStart(2,"0")} / ${String(CATS.length).padStart(2,"0")}</div>
+    <h3>${c.title}</h3>
+    <p>${c.desc}</p>
+    <div class="subs">${c.subs.map(s=>`<span class="sub">${s}</span>`).join("")}</div>
+    <div class="foot"><span>Open Codex</span><span class="arrow">→</span></div>
+  `;
+  grid.appendChild(el);
+});
+
+/* 3D tilt on hover */
+const cards = document.querySelectorAll(".card");
+cards.forEach(card=>{
+  card.addEventListener("mousemove",(e)=>{
+    const r=card.getBoundingClientRect();
+    const x=(e.clientX-r.left)/r.width, y=(e.clientY-r.top)/r.height;
+    const rx=(y-.5)*-10, ry=(x-.5)*12;
+    card.style.transform=`rotateX(${rx}deg) rotateY(${ry}deg) translateZ(0)`;
+    card.style.setProperty("--mx",(x*100)+"%");
+    card.style.setProperty("--my",(y*100)+"%");
+  });
+  card.addEventListener("mouseleave",()=>{
+    card.style.transform="";
+  });
+});
+
+/* Filter chips */
+document.getElementById("filters").addEventListener("click",(e)=>{
+  const b=e.target.closest(".chip"); if(!b) return;
+  document.querySelectorAll(".chip").forEach(c=>c.classList.toggle("active",c===b));
+  const f=b.dataset.f;
+  cards.forEach(c=>{
+    c.style.display=(f==="all"||c.dataset.tag===f)?"":"none";
+  });
+});
+
+/* Search */
+const q=document.getElementById("q");
+q.addEventListener("input",()=>{
+  const s=q.value.trim().toLowerCase();
+  cards.forEach(c=>{
+    c.style.display = c.dataset.name.includes(s) ? "" : "none";
+  });
+});
+document.addEventListener("keydown",(e)=>{
+  if(e.key==="/" && document.activeElement!==q){e.preventDefault();q.focus();}
+});
+
+/* Reveal on scroll */
+const io=new IntersectionObserver((entries)=>{
+  entries.forEach(en=>{ if(en.isIntersecting){en.target.classList.add("in");io.unobserve(en.target);}});
+},{threshold:.12});
+document.querySelectorAll(".reveal").forEach(el=>io.observe(el));
+
+/* Animated counters */
+document.querySelectorAll(".stat .n").forEach(el=>{
+  const t=+el.dataset.count, dur=1400, s=performance.now();
+  const pre=el.dataset.prefix||"", suf=el.dataset.suffix||"";
+  function frame(now){
+    const p=Math.min((now-s)/dur,1);
+    const v=Math.floor(t*(1-Math.pow(1-p,3)));
+    el.textContent=pre+v+suf;
+    if(p<1) requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+});
+
+/* ============================================================
+   THREE.JS IMMERSIVE BACKGROUND
+   — Starfield + wireframe torus knot + floating shards
+============================================================ */
+(function(){
+  if(!window.THREE) return;
+  const canvas=document.getElementById("bg");
+  const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true});
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+  renderer.setSize(innerWidth,innerHeight);
+
+  const scene=new THREE.Scene();
+  scene.fog=new THREE.FogExp2(0x04060b,0.035);
+
+  const camera=new THREE.PerspectiveCamera(55,innerWidth/innerHeight,0.1,200);
+  camera.position.set(0,0,14);
+
+  /* Starfield */
+  const starGeo=new THREE.BufferGeometry();
+  const N=2400;
+  const pos=new Float32Array(N*3), col=new Float32Array(N*3);
+  const cA=new THREE.Color(0x7c5cff), cB=new THREE.Color(0x00ffc6);
+  for(let i=0;i<N;i++){
+    const r=6+Math.random()*40;
+    const th=Math.random()*Math.PI*2, ph=Math.acos(2*Math.random()-1);
+    pos[i*3]  =r*Math.sin(ph)*Math.cos(th);
+    pos[i*3+1]=r*Math.sin(ph)*Math.sin(th);
+    pos[i*3+2]=r*Math.cos(ph);
+    const c=cA.clone().lerp(cB,Math.random());
+    col[i*3]=c.r; col[i*3+1]=c.g; col[i*3+2]=c.b;
+  }
+  starGeo.setAttribute("position",new THREE.BufferAttribute(pos,3));
+  starGeo.setAttribute("color",new THREE.BufferAttribute(col,3));
+  const stars=new THREE.Points(starGeo,new THREE.PointsMaterial({size:0.05,vertexColors:true,transparent:true,opacity:.9}));
+  scene.add(stars);
+
+  /* Central holographic torus knot */
+  const knotGeo=new THREE.TorusKnotGeometry(2.3,0.55,220,24);
+  const knotMat=new THREE.MeshBasicMaterial({color:0x7c5cff,wireframe:true,transparent:true,opacity:.35});
+  const knot=new THREE.Mesh(knotGeo,knotMat);
+  scene.add(knot);
+
+  const knot2=new THREE.Mesh(new THREE.TorusKnotGeometry(3.2,0.06,180,20),new THREE.MeshBasicMaterial({color:0x00ffc6,wireframe:true,transparent:true,opacity:.25}));
+  scene.add(knot2);
+
+  /* Floating icosahedron shards */
+  const shards=[];
+  for(let i=0;i<14;i++){
+    const g=new THREE.IcosahedronGeometry(0.25+Math.random()*0.35,0);
+    const m=new THREE.MeshBasicMaterial({color:Math.random()<.5?0x00ffc6:0x7c5cff,wireframe:true,transparent:true,opacity:.45});
+    const mesh=new THREE.Mesh(g,m);
+    mesh.position.set((Math.random()-.5)*14,(Math.random()-.5)*10,(Math.random()-.5)*10);
+    mesh.userData={sp:0.002+Math.random()*0.01,ax:new THREE.Vector3(Math.random(),Math.random(),Math.random()).normalize()};
+    scene.add(mesh);shards.push(mesh);
+  }
+
+  /* Mouse parallax */
+  let mx=0,my=0,tx=0,ty=0;
+  addEventListener("mousemove",(e)=>{
+    mx=(e.clientX/innerWidth-.5); my=(e.clientY/innerHeight-.5);
+  });
+  addEventListener("resize",()=>{
+    camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();
+    renderer.setSize(innerWidth,innerHeight);
+  });
+
+  /* Scroll effect */
+  let scrollY=0;
+  addEventListener("scroll",()=>{scrollY=window.scrollY||0;},{passive:true});
+
+  const clock=new THREE.Clock();
+  function loop(){
+    const t=clock.getElapsedTime();
+    tx += (mx-tx)*0.05; ty += (my-ty)*0.05;
+    camera.position.x = tx*2;
+    camera.position.y = -ty*2 - scrollY*0.005;
+    camera.lookAt(0,0,0);
+
+    stars.rotation.y = t*0.02;
+    stars.rotation.x = t*0.01;
+
+    knot.rotation.x = t*0.25;
+    knot.rotation.y = t*0.18;
+    knot2.rotation.x = -t*0.12;
+    knot2.rotation.z = t*0.22;
+
+    shards.forEach(s=>{
+      s.rotateOnAxis(s.userData.ax,s.userData.sp);
+      s.position.y += Math.sin(t+s.position.x)*0.0025;
+    });
+
+    renderer.render(scene,camera);
+    requestAnimationFrame(loop);
+  }
+  loop();
+})();
+</script>
+</body>
+</html>
