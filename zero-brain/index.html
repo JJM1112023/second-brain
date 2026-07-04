@@ -195,6 +195,21 @@ canvas { position: fixed; inset: 0; }
 .i-line { font-size: 7.5px; color: #999; line-height: 1.6; padding-left: 12px; position: relative; margin-bottom: 3px; }
 .i-line::before { content: '$'; position: absolute; left: 0; }
 
+/* ── Responsive: narrow screens ─────────────────── */
+@media (max-width: 760px) {
+  .agent-card { min-width: 120px; padding: 5px 7px; }
+  .a-task { font-size: 7.5px; }
+  .region { min-width: 96px; padding: 3px 6px; }
+  .r-name { font-size: 8px; }
+  .r-stat { font-size: 6.5px; }
+  .info-panel { max-width: 82vw; }
+  .left-sidebar, .activity-graph, .metrics { display: none; }
+  .topbar, .bottombar { left: 16px; right: 16px; }
+  .sections { display: none; }
+  .terminal { justify-content: flex-start; }
+  .t-text { max-width: 55vw; text-overflow: ellipsis; }
+}
+
 /* ── Word flash ──────────────────────────────────── */
 .word-flash {
   position: absolute;
@@ -396,7 +411,7 @@ canvas { position: fixed; inset: 0; }
   <!-- ── Info Panels ── -->
   <div class="info-panel" id="info-you" style="top:18%;left:5%;opacity:0;border-color:rgba(255,120,40,0.4);">
     <div class="i-title" style="color:#f84;">WHAT I KNOW ABOUT YOU</div>
-    <div class="i-line" style="--c:#f84">Founder runs Agent Core AI (service agency) and AI Monopoly Club (community).</div>
+    <div class="i-line">Founder runs Agent Core AI (service agency) and AI Monopoly Club (community).</div>
     <div class="i-line">Hard rule: research and execute autonomously; never bounce back menus for things that can be looked up.</div>
   </div>
 
