@@ -5,6 +5,16 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
 <title>Awesome Ninja Admins — Immersive Codex</title>
 <meta name="description" content="A collection of awesome lists, manuals, blogs, hacks and tools for Awesome Ninja Admins — presented as an immersive 3D codex." />
+<meta name="theme-color" content="#04060b" />
+<meta name="color-scheme" content="dark" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Ninja Codex" />
+<link rel="manifest" href="manifest.webmanifest" />
+<link rel="icon" type="image/png" sizes="64x64" href="icons/favicon-64.png" />
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png" />
+<link rel="apple-touch-icon" href="icons/icon-192.png" />
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;800&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
@@ -272,6 +282,48 @@
   <div style="margin-top:6px;opacity:.6">Immersive shell rendered with Three.js · GPL v3</div>
 </footer>
 
+<script>
+/* PWA service worker registration */
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("sw.js").then((reg) => {
+      reg.addEventListener("updatefound", () => {
+        const nw = reg.installing;
+        if (!nw) return;
+        nw.addEventListener("statechange", () => {
+          if (nw.state === "installed" && navigator.serviceWorker.controller) {
+            showUpdateToast(() => { nw.postMessage("SKIP_WAITING"); });
+          }
+        });
+      });
+    }).catch(() => {});
+    let reloading = false;
+    navigator.serviceWorker.addEventListener("controllerchange", () => {
+      if (reloading) return; reloading = true; location.reload();
+    });
+  });
+}
+function showUpdateToast(onAccept){
+  const t=document.createElement("div");
+  t.style.cssText="position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:9999;background:rgba(14,22,40,.92);color:#e7f0ff;border:1px solid rgba(0,255,198,.4);backdrop-filter:blur(10px);padding:12px 16px;border-radius:12px;font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.06em;display:flex;gap:10px;align-items:center;box-shadow:0 20px 60px rgba(0,255,198,.2)";
+  t.innerHTML='<span>New build available.</span><button style="cursor:pointer;background:linear-gradient(135deg,#00ffc6,#7c5cff);border:none;color:#04060b;font-family:inherit;font-weight:700;padding:6px 12px;border-radius:8px">Reload</button><button style="cursor:pointer;background:transparent;border:none;color:#8ea0bd;font-family:inherit">Dismiss</button>';
+  const [reload,dismiss]=t.querySelectorAll("button");
+  reload.onclick=()=>{ onAccept(); };
+  dismiss.onclick=()=>{ t.remove(); };
+  document.body.appendChild(t);
+}
+
+/* Install prompt (Android/desktop Chrome/Edge) */
+let deferredPrompt=null;
+window.addEventListener("beforeinstallprompt",(e)=>{
+  e.preventDefault(); deferredPrompt=e;
+  const btn=document.createElement("button");
+  btn.className="btn"; btn.textContent="Install App";
+  btn.style.cssText="position:fixed;right:20px;bottom:20px;z-index:9999";
+  btn.onclick=async()=>{ btn.remove(); deferredPrompt.prompt(); await deferredPrompt.userChoice; deferredPrompt=null; };
+  document.body.appendChild(btn);
+});
+</script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
 <script>
 /* ============================================================
