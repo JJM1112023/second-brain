@@ -26,6 +26,7 @@ This is a curated "Awesome" list repository — a collection of tools, manuals, 
 ├── CODE_OF_CONDUCT.md
 ├── LICENSE.md               # GNU license
 ├── PWA-AND-HOOKS.md         # PWA install guide + local git-hook automation docs
+├── SECOND_BRAIN_INDEX.md    # Master map of the skill/tool library (pillar-organized catalog)
 ├── .travis.yml              # CI configuration (ShellCheck on master/testing)
 ├── .gitignore               # Ignores log/ directory
 ├── _config.yml              # GitHub Pages config (serves index.html, excludes docs/scripts)
