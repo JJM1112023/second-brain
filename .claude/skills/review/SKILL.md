@@ -1,3 +1,10 @@
+---
+name: review
+description: Write-review-fix loop for a shell script or the current branch's changed .sh files
+argument-hint: "[path/to/script.sh]"
+user-invocable: true
+---
+
 # /review — Write-Review-Fix Loop
 
 Run this skill on any shell script (or the current branch diff) to perform a full

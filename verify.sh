@@ -566,3 +566,6 @@ fi
 
 echo ""
 echo "════════════════════════════════════════════════════════"
+
+# Exit non-zero when any check failed so CI and wrappers see the real result
+[ "$FAIL" -eq 0 ] || exit 1

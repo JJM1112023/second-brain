@@ -59,7 +59,7 @@ This is a curated "Awesome" list repository — a collection of tools, manuals, 
 │
 ├── .claude/
 │   ├── settings.json        # Hooks: PostToolUse shellcheck + README link check, Stop reminder
-│   ├── hooks/               # check-readme-links.sh (validates README hrefs after edits)
+│   ├── hooks/               # check-readme-links.sh + shellcheck-edited.sh (PostToolUse validators)
 │   ├── skills/              # Reusable workflow skills (SKILL.md files: add-entry, review, ...)
 │   └── agents/              # Custom subagents (e.g. readme-reviewer.md)
 │
