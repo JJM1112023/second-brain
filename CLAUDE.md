@@ -103,7 +103,7 @@ SOB=$(git var GIT_AUTHOR_IDENT | sed -n 's/^\(.*>\).*$/- signed-off-by: \1/p')
 grep -qs "^$SOB" "$1" || echo "$SOB" >> "$1"
 ```
 
-The `.claude/settings.json` **Stop** hook prints a reminder if the last commit is missing the signed-off-by line.
+The `.bash .claude/hooks/shellcheck-edited.sh` **Stop** hook prints a reminder if the last commit is missing the signed-off-by line.
 
 ### Local git hooks (`.githooks/`)
 
