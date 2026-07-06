@@ -30,7 +30,6 @@ This is a curated "Awesome" list repository — a collection of tools, manuals, 
 ├── .travis.yml              # CI configuration (ShellCheck on master/testing)
 ├── .gitignore               # Ignores log/ directory
 ├── _config.yml              # GitHub Pages config (serves index.html, excludes docs/scripts)
-├── verify.sh                # Standalone environment verification script (prereqs/services checks)
 │
 ├── index.html               # Immersive 3D "Codex" landing page (GitHub Pages / PWA shell)
 ├── manifest.webmanifest     # PWA manifest (name, icons, display mode)
