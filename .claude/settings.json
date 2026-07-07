@@ -20,7 +20,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash -c 'git -C \"$(git rev-parse --show-toplevel 2>/dev/null)\" log -1 --pretty=%B 2>/dev/null | grep -q \"signed-off-by\" || echo \"REMINDER: Last commit is missing the signed-off-by line. See CLAUDE.md for the git hook to add it automatically.\"'"
+            "command": "bash -c 'git -C \"$(git rev-parse --show-toplevel 2>/dev/null)\" log -1 --pretty=%B 2>/dev/null | grep -q \Signed-off-by: John M <email>\" || echo \"REMINDER: Last commit is missing the signed-off-by line. See CLAUDE.md for the git hook to add it automatically.\"'"
           }
         ]
       }
