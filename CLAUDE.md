@@ -72,7 +72,7 @@ This is a curated "Awesome" list repository — a collection of tools, manuals, 
 
 - `master` — stable, production branch
 - `testing` — integration branch; **all pull requests target this branch first**
-- Feature branches are named descriptively (e.g., `claude/claude-md-docs-oyll4d`)
+- Feature branches are named descriptively (e.g., `claude/claude-md-docs-4hwrmo`)
 
 ### Making Changes
 
