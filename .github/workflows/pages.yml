@@ -1,14 +1,8 @@
 name: Deploy Z.E.R.O. to GitHub Pages
 
+# Manual-only: kept private for now. Trigger from the Actions tab
+# ("Run workflow") when you're ready to make the dashboard public.
 on:
-  push:
-    branches:
-      - claude/tiktok-build-clone-f501dk
-      - master
-      - testing
-    paths:
-      - 'zero-brain/**'
-      - '.github/workflows/pages.yml'
   workflow_dispatch:
 
 permissions:
