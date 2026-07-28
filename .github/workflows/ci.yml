@@ -1,0 +1,32 @@
+name: CI
+
+on:
+  push:
+    branches: [master, testing]
+  pull_request:
+    branches: [testing, master]
+
+jobs:
+  shellcheck:
+    name: ShellCheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install ShellCheck
+        run: sudo apt-get update && sudo apt-get install -y shellcheck
+      - name: ShellCheck version
+        run: shellcheck --version
+      - name: Lint bash scripts
+        run: shellcheck -s bash -e 1072,1094 -x src/*.sh lib/common.sh bin/git-template-full
+
+  bats:
+    name: Bats tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install bats
+        run: sudo apt-get update && sudo apt-get install -y bats
+      - name: Bats version
+        run: bats --version
+      - name: Run test suite
+        run: bats test/

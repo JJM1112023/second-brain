@@ -13,7 +13,7 @@ This is a curated "Awesome" list repository — a collection of tools, manuals, 
 1. **Bash utility scripts** — working sysadmin scripts live in `src/`, sharing helpers from `lib/common.sh`.
 2. **A Progressive Web App (PWA)** — an immersive 3D landing page (`index.html`) served via GitHub Pages, installable and offline-capable through a service worker (`sw.js`) and web manifest.
 
-**Tech stack:** Markdown (content), Bash (scripts), ShellCheck (linting), Travis CI (CI/CD), HTML/JS/Three.js + Service Worker (PWA), Python + Pillow (icon generation).
+**Tech stack:** Markdown (content), Bash (scripts), ShellCheck (linting), bats-core (functional tests), GitHub Actions (CI/CD), HTML/JS/Three.js + Service Worker (PWA), Python + Pillow (icon generation).
 
 ## Repository Structure
 
@@ -27,7 +27,8 @@ This is a curated "Awesome" list repository — a collection of tools, manuals, 
 ├── LICENSE.md               # GNU license
 ├── PWA-AND-HOOKS.md         # PWA install guide + local git-hook automation docs
 ├── SECOND_BRAIN_INDEX.md    # Master map of the skill/tool library (pillar-organized catalog)
-├── .travis.yml              # CI configuration (ShellCheck on master/testing)
+├── .github/workflows/ci.yml # CI: ShellCheck + bats on pushes to master/testing and PRs
+├── .travis.yml              # Legacy CI config (superseded by GitHub Actions; kept for history)
 ├── .gitignore               # Ignores log/ directory
 ├── _config.yml              # GitHub Pages config (serves index.html, excludes docs/scripts)
 │
@@ -44,6 +45,10 @@ This is a curated "Awesome" list repository — a collection of tools, manuals, 
 │   └── sslcheck.sh          #   SSL/TLS certificate expiry checker
 ├── lib/
 │   └── common.sh            # Shared bash helpers (print_header, require_cmd, ...) — sourced, not run
+├── test/                    # Bats functional test suite (hermetic — stubs external commands)
+│   ├── test_helper.bash     #   shared setup: temp dirs + PATH-based command stubs
+│   ├── common.bats          #   unit tests for lib/common.sh
+│   └── *.bats               #   one suite per src/ script
 ├── skel/                    # Skeleton/template files (placeholder — .gitkeep only)
 ├── bin/
 │   └── git-template-full    # One-time signed-off-by git-template setup
@@ -129,7 +134,7 @@ All Bash scripts in `src/`, `lib/`, and `bin/` must pass ShellCheck before mergi
 **Run locally:**
 ```bash
 shellcheck --version
-shellcheck -s bash -e 1072,1094 -x src/* -x lib/* bin/git-template-full
+shellcheck -s bash -e 1072,1094 -x src/*.sh lib/common.sh bin/git-template-full
 ```
 
 Flags:
@@ -144,6 +149,17 @@ If a non-critical warning like SC2154 appears and cannot be fixed, suppress it i
 
 The `.claude/settings.json` **PostToolUse** hook automatically runs ShellCheck on any edited `.sh` file (and anything under `src/`, `lib/`, or `bin/`).
 
+### Functional tests (bats)
+
+The `test/` directory holds a [bats-core](https://github.com/bats-core/bats-core) suite covering `lib/common.sh` and all `src/` scripts (threshold/exit-code logic, file removal/compression behavior, argument parsing).
+
+**Run locally:**
+```bash
+bats test/
+```
+
+Tests are **hermetic**: external commands (`df`, `openssl`, `ping`, `dig`, `free`, ...) are replaced by stubs that `test/test_helper.bash` places first in `PATH`, and file operations run against per-test temp dirs — no network access and no dependence on the host's real filesystems. When adding or changing a `src/` script, add or update its `.bats` suite; use `make_stub`/`run_stubbed` from the helper rather than calling real system tools.
+
 ### PWA validation
 
 The `pre-push` hook is the PWA gate (see above). To check manually before pushing:
@@ -153,9 +169,9 @@ The `pre-push` hook is the PWA gate (see above). To check manually before pushin
 
 When editing PWA shell files (`index.html`, `sw.js`, `manifest.webmanifest`, `icons/`), **always bump the `VERSION` constant in `sw.js`** — the cache names (`SHELL`/`RUNTIME`) derive from it, and only a `VERSION` change rotates them. The `post-merge` hook's `BUILD_STAMP` merely byte-changes `sw.js` so browsers re-install the service worker; it does not rotate cache names and is not a substitute for a `VERSION` bump.
 
-### CI (Travis CI)
+### CI (GitHub Actions)
 
-CI runs ShellCheck on `master` and `testing` branches only. It installs shellcheck from the Debian unstable repository to get a recent version. There is **no GitHub Actions workflow** — only `.travis.yml`. CI does **not** validate the PWA; that is enforced locally by the `pre-push` hook.
+`.github/workflows/ci.yml` runs two jobs — ShellCheck and the bats suite — on pushes to `master`/`testing` and on pull requests targeting those branches, so feature branches get feedback via their PR. `.travis.yml` is the legacy CI config, kept only for history; Travis no longer runs. CI does **not** validate the PWA; that is enforced locally by the `pre-push` hook.
 
 ## Content Conventions (README.md)
 
@@ -262,7 +278,7 @@ Create `CLAUDE.local.md` in the project root for personal session overrides (e.g
 
 - **README is the primary deliverable.** Most contributions are new entries in `README.md`; some are Bash scripts in `src/` or PWA changes.
 - **No package build step.** There is no `npm install` or `make`. Markdown and the PWA are served as-is. The only "build" is `scripts/gen_icons.py`, which regenerates PWA icons (needs Pillow).
-- **Tests = ShellCheck** for Bash, and the **`pre-push` hook** for the PWA. Markdown has no test.
+- **Tests = ShellCheck + the bats suite (`bats test/`)** for Bash, and the **`pre-push` hook** for the PWA. Markdown has no test. Both bash checks run in CI (GitHub Actions) on PRs.
 - **IMPORTANT: Signed commits are required.** Never commit without the signed-off-by line.
 - **IMPORTANT: PR target is `testing`**, not `master`.
 - **`src/` and `lib/` now contain real scripts** — no longer placeholders. `skel/` is still an empty placeholder (`.gitkeep` only). Do not delete `src/`, `lib/`, or `skel/`.
