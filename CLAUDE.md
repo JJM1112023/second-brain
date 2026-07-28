@@ -27,7 +27,9 @@ This is a curated "Awesome" list repository — a collection of tools, manuals, 
 ├── LICENSE.md               # GNU license
 ├── PWA-AND-HOOKS.md         # PWA install guide + local git-hook automation docs
 ├── SECOND_BRAIN_INDEX.md    # Master map of the skill/tool library (pillar-organized catalog)
-├── .github/workflows/ci.yml # CI: ShellCheck + bats on pushes to master/testing and PRs
+├── .github/workflows/
+│   ├── ci.yml               # CI: ShellCheck, bats, PWA, README, icon jobs (PRs + master/testing)
+│   └── links.yml            # Weekly README dead-link check (lychee; not PR-blocking)
 ├── .travis.yml              # Legacy CI config (superseded by GitHub Actions; kept for history)
 ├── .gitignore               # Ignores log/ directory
 ├── _config.yml              # GitHub Pages config (serves index.html, excludes docs/scripts)
@@ -45,16 +47,19 @@ This is a curated "Awesome" list repository — a collection of tools, manuals, 
 │   └── sslcheck.sh          #   SSL/TLS certificate expiry checker
 ├── lib/
 │   └── common.sh            # Shared bash helpers (print_header, require_cmd, ...) — sourced, not run
-├── test/                    # Bats functional test suite (hermetic — stubs external commands)
-│   ├── test_helper.bash     #   shared setup: temp dirs + PATH-based command stubs
+├── test/                    # Functional test suite (hermetic — stubs external commands)
+│   ├── test_helper.bash     #   shared bats setup: temp dirs + PATH-based command stubs
 │   ├── common.bats          #   unit tests for lib/common.sh
-│   └── *.bats               #   one suite per src/ script
+│   ├── *.bats               #   one suite per src/ script + the .githooks/ hooks
+│   └── gen_icons_test.py    #   icon generator smoke test (needs Pillow)
 ├── skel/                    # Skeleton/template files (placeholder — .gitkeep only)
 ├── bin/
 │   └── git-template-full    # One-time signed-off-by git-template setup
 │
 ├── scripts/
 │   ├── install-hooks.sh     # Point git at tracked .githooks/ (run once per clone)
+│   ├── validate-pwa.sh      # PWA shell validation (shared by pre-push hook + CI pwa job)
+│   ├── check-readme.sh      # README quality gate: link schemes, duplicates, entry format
 │   └── gen_icons.py         # Regenerate PWA icons (needs python3 + Pillow)
 │
 ├── .githooks/               # Tracked git hooks (enabled via core.hooksPath)
@@ -120,7 +125,7 @@ bash scripts/install-hooks.sh
 
 | Hook          | What it does                                                                                     |
 | ------------- | ------------------------------------------------------------------------------------------------ |
-| `pre-push`    | Blocks the push if `manifest.webmanifest` is invalid JSON/missing keys, `sw.js` has syntax errors, or `index.html` is missing its manifest link / SW registration. |
+| `pre-push`    | Blocks the push if the PWA shell is broken — delegates to `scripts/validate-pwa.sh` (manifest JSON/keys/icons, `sw.js` syntax, `index.html` manifest link + SW registration, precache list consistency). The CI `pwa` job runs the same script. |
 | `post-merge`  | After a pull/merge, regenerates icons if `gen_icons.py`/`manifest.webmanifest` changed, and bumps the `sw.js` `BUILD_STAMP` when any PWA shell file changed. |
 
 Bypass when necessary: `git push --no-verify`. Icon regeneration needs `python3` + `pillow`; `sw.js` syntax check uses `node --check` when available (falls back to a grep sanity check). See `PWA-AND-HOOKS.md` for full details.
@@ -162,16 +167,29 @@ Tests are **hermetic**: external commands (`df`, `openssl`, `ping`, `dig`, `free
 
 ### PWA validation
 
-The `pre-push` hook is the PWA gate (see above). To check manually before pushing:
-- `python3 -c "import json; json.load(open('manifest.webmanifest'))"` — manifest is valid JSON
-- `node --check sw.js` — service worker parses
-- Confirm `index.html` still has `<link rel="manifest">` and a `serviceWorker` registration
+`scripts/validate-pwa.sh` is the single source of truth for PWA shell checks — the `pre-push` hook runs it locally and the CI `pwa` job runs it on every PR. Run it manually with:
+
+```bash
+bash scripts/validate-pwa.sh
+```
+
+It validates: manifest JSON + required keys + icon files, `sw.js` syntax (`node --check` when available), `index.html` manifest link / SW registration / balanced `<script>` tags, and that every path in the `sw.js` `SHELL_ASSETS` precache list exists in the repo.
 
 When editing PWA shell files (`index.html`, `sw.js`, `manifest.webmanifest`, `icons/`), **always bump the `VERSION` constant in `sw.js`** — the cache names (`SHELL`/`RUNTIME`) derive from it, and only a `VERSION` change rotates them. The `post-merge` hook's `BUILD_STAMP` merely byte-changes `sw.js` so browsers re-install the service worker; it does not rotate cache names and is not a substitute for a `VERSION` bump.
 
 ### CI (GitHub Actions)
 
-`.github/workflows/ci.yml` runs two jobs — ShellCheck and the bats suite — on pushes to `master`/`testing` and on pull requests targeting those branches, so feature branches get feedback via their PR. `.travis.yml` is the legacy CI config, kept only for history; Travis no longer runs. CI does **not** validate the PWA; that is enforced locally by the `pre-push` hook.
+`.github/workflows/ci.yml` runs five jobs on pushes to `master`/`testing` and on pull requests targeting those branches, so feature branches get feedback via their PR:
+
+1. **ShellCheck** — lints `src/`, `lib/common.sh`, `bin/git-template-full`, `scripts/*.sh`, and the `.githooks/` hooks
+2. **Bats tests** — `bats test/` (src scripts, common.sh, and the git hooks)
+3. **PWA validation** — `scripts/validate-pwa.sh` (same gate as the local `pre-push` hook)
+4. **README checks** — `scripts/check-readme.sh` (link schemes, duplicate URLs, entry format)
+5. **Icon generator smoke test** — `test/gen_icons_test.py` with Pillow
+
+`.github/workflows/links.yml` additionally runs a **weekly lychee dead-link check** over README.md (plus manual dispatch). It is deliberately not PR-blocking so third-party outages and link rot never fail unrelated changes.
+
+`.travis.yml` is the legacy CI config, kept only for history; Travis no longer runs.
 
 ## Content Conventions (README.md)
 
@@ -200,7 +218,7 @@ Example:
 </p>
 ```
 
-All `href` values must start with `http://`, `https://`, `#`, or `mailto:` — the `.claude/hooks/check-readme-links.sh` hook flags anything else after an edit. Prefer the `add-entry` skill (`.claude/skills/add-entry/`) to add entries in the correct format.
+All `href` values must start with `http://`, `https://`, `#`, or `mailto:` — the `.claude/hooks/check-readme-links.sh` hook flags anything else after an edit, and the CI `readme` job (`scripts/check-readme.sh`) enforces link schemes, duplicate-URL detection, and entry-format conformance on every PR. Prefer the `add-entry` skill (`.claude/skills/add-entry/`) to add entries in the correct format.
 
 ### Existing categories in README.md
 
@@ -278,7 +296,7 @@ Create `CLAUDE.local.md` in the project root for personal session overrides (e.g
 
 - **README is the primary deliverable.** Most contributions are new entries in `README.md`; some are Bash scripts in `src/` or PWA changes.
 - **No package build step.** There is no `npm install` or `make`. Markdown and the PWA are served as-is. The only "build" is `scripts/gen_icons.py`, which regenerates PWA icons (needs Pillow).
-- **Tests = ShellCheck + the bats suite (`bats test/`)** for Bash, and the **`pre-push` hook** for the PWA. Markdown has no test. Both bash checks run in CI (GitHub Actions) on PRs.
+- **Tests = ShellCheck + the bats suite (`bats test/`)** for Bash, **`scripts/validate-pwa.sh`** for the PWA (run by both the `pre-push` hook and CI), and **`scripts/check-readme.sh`** for README quality. All of these run in CI (GitHub Actions) on PRs, plus a weekly dead-link check.
 - **IMPORTANT: Signed commits are required.** Never commit without the signed-off-by line.
 - **IMPORTANT: PR target is `testing`**, not `master`.
 - **`src/` and `lib/` now contain real scripts** — no longer placeholders. `skel/` is still an empty placeholder (`.gitkeep` only). Do not delete `src/`, `lib/`, or `skel/`.
