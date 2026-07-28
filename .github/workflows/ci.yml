@@ -1,0 +1,62 @@
+name: CI
+
+on:
+  push:
+    branches: [master, testing]
+  pull_request:
+    branches: [testing, master]
+
+jobs:
+  shellcheck:
+    name: ShellCheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install ShellCheck
+        run: sudo apt-get update && sudo apt-get install -y shellcheck
+      - name: ShellCheck version
+        run: shellcheck --version
+      - name: Lint bash scripts
+        run: >-
+          shellcheck -s bash -e 1072,1094 -x
+          src/*.sh lib/common.sh bin/git-template-full
+          scripts/validate-pwa.sh scripts/check-readme.sh scripts/install-hooks.sh
+          .githooks/pre-push .githooks/post-merge
+
+  bats:
+    name: Bats tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install bats
+        run: sudo apt-get update && sudo apt-get install -y bats
+      - name: Bats version
+        run: bats --version
+      - name: Run test suite
+        run: bats test/
+
+  pwa:
+    name: PWA validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate PWA shell
+        run: bash scripts/validate-pwa.sh
+
+  readme:
+    name: README checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check README quality
+        run: bash scripts/check-readme.sh
+
+  icons:
+    name: Icon generator smoke test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Pillow
+        run: python3 -m pip install --upgrade pillow
+      - name: Run gen_icons smoke test
+        run: python3 test/gen_icons_test.py
