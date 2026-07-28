@@ -1,8 +1,18 @@
 #!/usr/bin/env bash
-# Runs after edits — validates that all href links in README.md are well-formed.
+# PostToolUse hook — validates that all href links in README.md are well-formed.
+# Claude Code passes the event JSON on stdin; the edited path is tool_input.file_path.
 # Non-http links (relative paths, empty hrefs) indicate a broken or missing URL.
 
-if [[ "${CLAUDE_FILE_PATH:-}" == *README.md ]]; then
+file_path="$(python3 -c '
+import json, sys
+try:
+    data = json.load(sys.stdin)
+except Exception:
+    data = {}
+print(data.get("tool_input", {}).get("file_path", ""))
+' 2>/dev/null || true)"
+
+if [[ "${file_path}" == *README.md ]]; then
   python3 - <<'EOF'
 import re, sys
 

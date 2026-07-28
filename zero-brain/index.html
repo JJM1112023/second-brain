@@ -1,0 +1,1012 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Z.E.R.O. · AI Second Brain</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧠</text></svg>">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: #000;
+  color: #fff;
+  font-family: 'Courier New', monospace;
+  overflow: hidden;
+  height: 100vh;
+  width: 100vw;
+  user-select: none;
+}
+
+canvas#c { position: fixed; inset: 0; cursor: grab; touch-action: none; }
+canvas#c.dragging { cursor: grabbing; }
+
+/* ── HUD wrapper ────────────────────────────────── */
+.hud { position: fixed; inset: 0; pointer-events: none; }
+
+/* Corner brackets */
+.corner {
+  position: absolute;
+  width: 36px; height: 36px;
+  border-color: rgba(0, 200, 255, 0.3);
+  border-style: solid;
+}
+.c-tl { top: 12px; left: 12px; border-width: 2px 0 0 2px; }
+.c-tr { top: 12px; right: 12px; border-width: 2px 2px 0 0; }
+.c-bl { bottom: 12px; left: 12px; border-width: 0 0 2px 2px; }
+.c-br { bottom: 12px; right: 12px; border-width: 0 2px 2px 0; }
+
+/* Scanline sweep */
+.scanline {
+  position: absolute;
+  left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, rgba(0,210,255,0.12) 40%, rgba(0,210,255,0.18) 50%, rgba(0,210,255,0.12) 60%, transparent 100%);
+  animation: scan 5s linear infinite;
+}
+@keyframes scan { from{top:0%} to{top:100%} }
+
+/* ── Top bar ─────────────────────────────────────── */
+.topbar {
+  position: absolute;
+  top: 16px; left: 56px; right: 56px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.brand { display: flex; flex-direction: column; }
+.brand-name {
+  font-size: 14px; font-weight: 900; letter-spacing: 4px; color: #fff;
+  text-shadow: 0 0 20px rgba(0,200,255,0.4);
+}
+.brand-sub { font-size: 7.5px; color: #3a3a3a; letter-spacing: 2.5px; margin-top: 3px; }
+.mic-chip {
+  margin-top: 5px;
+  font-size: 7.5px; letter-spacing: 1px;
+  display: inline-flex; align-items: center; gap: 5px;
+  color: #555;
+  pointer-events: auto;
+  cursor: pointer;
+}
+.mic-dot { width: 5px; height: 5px; border-radius: 50%; background: #333; }
+.mic-chip.live .mic-dot { background: #4f8; animation: blink 2s ease-in-out infinite; }
+.mic-chip.live { color: #4f8; }
+.mic-chip.wake .mic-dot { background: #0cf; }
+.mic-chip.wake { color: #0cf; }
+
+/* Center badge */
+.badge { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.live-pill {
+  display: flex; align-items: center; gap: 7px;
+  border: 1px solid #900;
+  background: rgba(50,0,0,0.8);
+  padding: 4px 14px;
+  font-size: 10px; font-weight: bold; color: #f44;
+  letter-spacing: 1.5px;
+  border-radius: 2px;
+}
+.live-dot { width: 6px; height: 6px; background: #f00; border-radius: 50%; animation: blink 1s ease-in-out infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.1} }
+
+.live-stats {
+  display: flex; gap: 18px;
+  font-size: 7.5px; letter-spacing: 1px; color: #333;
+}
+.ls-v { color: #0cf; font-variant-numeric: tabular-nums; }
+
+/* Right metrics */
+.metrics { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; font-size: 7.5px; letter-spacing: 1px; }
+.m-row { display: flex; gap: 10px; }
+.m-lbl { color: #333; }
+.m-val { min-width: 36px; text-align: right; }
+.m-val.ok   { color: #4f8; }
+.m-val.warn { color: #f84; }
+.m-val.info { color: #4af; }
+
+/* ── Bottom bar ──────────────────────────────────── */
+.bottombar {
+  position: absolute;
+  bottom: 16px; left: 56px; right: 56px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.sections { display: flex; gap: 5px; flex-wrap: wrap; max-width: 320px; }
+.chip {
+  font-size: 7px; letter-spacing: 1px; color: #2a2a2a;
+  border: 1px solid #1a1a1a;
+  padding: 2px 6px; border-radius: 2px;
+  transition: all 0.4s;
+}
+.chip.active { color: #0cf; border-color: rgba(0,200,255,0.4); background: rgba(0,200,255,0.05); text-shadow: 0 0 8px rgba(0,200,255,0.5); }
+
+.terminal {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 8px; letter-spacing: 1px;
+  flex: 1; justify-content: center;
+}
+.t-prompt { color: #4f8; }
+.t-text { color: #3a3a3a; white-space: nowrap; overflow: hidden; border-right: 1px solid #3a3a3a; animation: tcursor 1.2s step-end infinite; }
+.t-text.awake { color: #0cf; text-shadow: 0 0 10px rgba(0,200,255,0.6); }
+@keyframes tcursor { 0%,100%{border-color:#3a3a3a} 50%{border-color:transparent} }
+
+/* waveform bars shown while awake */
+.wave { display: flex; align-items: flex-end; gap: 2px; height: 12px; opacity: 0; transition: opacity 0.3s; }
+.wave.on { opacity: 1; }
+.wave span { width: 2px; background: #0cf; height: 3px; }
+.wave.on span { animation: wbar 0.5s ease-in-out infinite alternate; }
+.wave span:nth-child(2) { animation-delay: 0.1s; }
+.wave span:nth-child(3) { animation-delay: 0.2s; }
+.wave span:nth-child(4) { animation-delay: 0.05s; }
+.wave span:nth-child(5) { animation-delay: 0.15s; }
+@keyframes wbar { from{height:2px} to{height:12px} }
+
+.statusline { font-size: 7.5px; color: #2a2a2a; letter-spacing: 1px; text-align: right; white-space: nowrap; }
+.statusline .on { color: #4f8; }
+.statusline .cnt { color: #4af; }
+
+/* sound toggle */
+.snd-btn {
+  pointer-events: auto;
+  cursor: pointer;
+  font-size: 7.5px; letter-spacing: 1px;
+  color: #444; border: 1px solid #222;
+  padding: 3px 8px; border-radius: 2px;
+  background: rgba(0,0,0,0.6);
+  margin-bottom: 5px;
+  display: inline-block;
+}
+.snd-btn.on { color: #4f8; border-color: rgba(0,255,140,0.35); }
+
+/* ── Left sidebar ────────────────────────────────── */
+.left-sidebar {
+  position: absolute;
+  left: 14px; top: 50%; transform: translateY(-50%);
+  display: flex; flex-direction: column; gap: 10px;
+  font-size: 7.5px; letter-spacing: 1px;
+}
+.sb-block { border-left: 1px solid #161616; padding-left: 7px; }
+.sb-label { color: #222; margin-bottom: 2px; }
+.sb-val { font-size: 13px; font-weight: bold; font-variant-numeric: tabular-nums; }
+
+/* ── Right activity graph ────────────────────────── */
+.activity-graph {
+  position: absolute;
+  right: 14px; top: 50%; transform: translateY(-50%);
+  width: 10px; height: 180px;
+  display: flex; flex-direction: column; gap: 2px;
+}
+.act-seg { flex: 1; background: rgba(0,200,100,0.15); border-radius: 1px; transition: background 0.3s; }
+.act-seg.on { background: rgba(0,200,100,0.6); }
+
+/* ── Brain region labels (3D-tracked) ────────────── */
+.region {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  border: 1px solid;
+  background: rgba(0,0,0,0.78);
+  padding: 4px 8px;
+  min-width: 118px;
+  pointer-events: auto;
+  cursor: pointer;
+  will-change: transform, opacity;
+  transition: border-color 0.3s;
+}
+.region.focused { box-shadow: 0 0 18px rgba(0,200,255,0.35); }
+.r-name { font-weight: bold; font-size: 10px; letter-spacing: 1px; margin-bottom: 2px; white-space: nowrap; }
+.r-stat { font-size: 7.5px; color: #666; white-space: nowrap; }
+.r-bar-wrap { margin-top: 4px; height: 2px; background: rgba(255,255,255,0.07); border-radius: 1px; overflow: hidden; }
+.r-bar-fill { height: 100%; border-radius: 1px; animation: rpulse 2.4s ease-in-out infinite; }
+@keyframes rpulse { 0%,100%{opacity:0.9} 50%{opacity:0.35} }
+
+/* ── Agent cards ─────────────────────────────────── */
+.agent-card {
+  position: absolute;
+  border: 1px solid rgba(60,160,255,0.35);
+  background: rgba(0,5,15,0.9);
+  padding: 8px 10px;
+  min-width: 170px;
+  transition: opacity 0.6s;
+}
+.a-id { font-size: 7.5px; font-weight: bold; letter-spacing: 1.5px; color: #4af; margin-bottom: 3px; }
+.a-task { font-size: 8.5px; color: #bbb; margin-bottom: 6px; line-height: 1.35; }
+.a-prog-wrap { height: 2px; background: rgba(255,255,255,0.07); border-radius: 1px; overflow: hidden; margin-bottom: 4px; }
+.a-prog-fill { height: 100%; background: linear-gradient(90deg, #0af, #0ff); border-radius: 1px; width: 0%; transition: width 1.2s ease; }
+.a-status { font-size: 7.5px; }
+.a-status.running { color: #ff4; animation: flicker 1.8s ease-in-out infinite; }
+.a-status.complete { color: #4f8; }
+@keyframes flicker { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+/* ── Info panels ─────────────────────────────────── */
+.info-panel {
+  position: absolute;
+  border: 1px solid;
+  background: rgba(4,2,0,0.92);
+  padding: 11px 14px;
+  max-width: 350px;
+  transition: opacity 0.6s;
+}
+.i-title { font-size: 8.5px; font-weight: bold; letter-spacing: 1px; margin-bottom: 8px; padding-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,0.07); }
+.i-line { font-size: 7.5px; color: #999; line-height: 1.6; padding-left: 12px; position: relative; margin-bottom: 3px; }
+.i-line::before { content: '$'; position: absolute; left: 0; }
+
+/* ── Wake ring ───────────────────────────────────── */
+.wake-ring {
+  position: absolute;
+  top: 50%; left: 50%;
+  width: 120px; height: 120px;
+  margin: -60px 0 0 -60px;
+  border: 2px solid rgba(0,200,255,0.8);
+  border-radius: 50%;
+  opacity: 0;
+  pointer-events: none;
+}
+.wake-ring.fire { animation: ring 1.2s ease-out; }
+@keyframes ring {
+  0%   { opacity: 0.9; transform: scale(0.4); }
+  100% { opacity: 0;   transform: scale(3.2); }
+}
+
+/* ── Hint line ───────────────────────────────────── */
+.hint {
+  position: absolute;
+  bottom: 44px; left: 50%; transform: translateX(-50%);
+  font-size: 7px; letter-spacing: 1.5px; color: #222;
+  white-space: nowrap;
+}
+
+/* ── Responsive: narrow screens ─────────────────── */
+@media (max-width: 760px) {
+  .agent-card { min-width: 120px; padding: 5px 7px; }
+  .a-task { font-size: 7.5px; }
+  .region { min-width: 90px; padding: 3px 6px; }
+  .r-name { font-size: 8px; }
+  .r-stat { font-size: 6.5px; }
+  .info-panel { max-width: 82vw; }
+  .left-sidebar, .activity-graph, .metrics { display: none; }
+  .topbar, .bottombar { left: 16px; right: 16px; }
+  .sections { display: none; }
+  .terminal { justify-content: flex-start; }
+  .t-text { max-width: 55vw; text-overflow: ellipsis; }
+  .hint { display: none; }
+}
+
+/* ── Word flash ──────────────────────────────────── */
+.word-flash {
+  position: absolute;
+  bottom: 100px; left: 50%; transform: translateX(-50%);
+  font-size: clamp(38px, 6.5vw, 68px);
+  font-weight: 900;
+  letter-spacing: 6px;
+  color: #fff;
+  text-shadow: 0 0 30px rgba(255,255,255,0.35), 0 0 70px rgba(80,100,255,0.2);
+  opacity: 0;
+  transition: opacity 0.35s;
+  white-space: nowrap;
+}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+
+<div class="hud" id="hud">
+
+  <div class="corner c-tl"></div>
+  <div class="corner c-tr"></div>
+  <div class="corner c-bl"></div>
+  <div class="corner c-br"></div>
+  <div class="scanline"></div>
+  <div class="wake-ring" id="wake-ring"></div>
+
+  <!-- ── Top bar ── -->
+  <div class="topbar">
+    <div class="brand">
+      <div class="brand-name">Z.E.R.O.</div>
+      <div class="brand-sub">NEUROLIKE BRAIN · CONNECTED · AI SECOND BRAIN</div>
+      <div class="mic-chip" id="mic-chip"><div class="mic-dot"></div><span id="mic-txt">MIC OFFLINE · PRESS SPACE TO WAKE</span></div>
+    </div>
+
+    <div class="badge">
+      <div class="live-pill"><div class="live-dot"></div><span id="live-txt">LIVE 01 / 07</span></div>
+      <div class="live-stats">
+        <span>NEURONS <span class="ls-v" id="neuron-count">1,847</span></span>
+        <span>FIRING <span class="ls-v" id="fire-rate">0.8k/s</span></span>
+        <span>CONNECTIONS <span class="ls-v" id="conn-count">312</span></span>
+      </div>
+    </div>
+
+    <div class="metrics">
+      <div class="m-row"><span class="m-lbl">CPU</span><span class="m-val ok" id="m-cpu">2%</span></div>
+      <div class="m-row"><span class="m-lbl">MEM</span><span class="m-val warn" id="m-mem">6.1 GB</span></div>
+      <div class="m-row"><span class="m-lbl">OPS</span><span class="m-val info" id="m-ops">847/s</span></div>
+      <div class="m-row"><span class="m-lbl">MODEL</span><span class="m-val info">LOCAL · FREE</span></div>
+    </div>
+  </div>
+
+  <!-- ── Left sidebar ── -->
+  <div class="left-sidebar">
+    <div class="sb-block">
+      <div class="sb-label">AGENTS</div>
+      <div class="sb-val" id="sb-agents" style="color:#4af;">6</div>
+    </div>
+    <div class="sb-block">
+      <div class="sb-label">TASKS (ALL-TIME)</div>
+      <div class="sb-val" id="sb-tasks" style="color:#4f8;">0</div>
+    </div>
+    <div class="sb-block">
+      <div class="sb-label">UPTIME (TOTAL)</div>
+      <div class="sb-val" id="sb-uptime" style="color:#f84; font-size:10px;">00:00:00</div>
+    </div>
+  </div>
+
+  <!-- ── Right activity graph ── -->
+  <div class="activity-graph" id="act-graph">
+    <div class="act-seg"></div><div class="act-seg"></div><div class="act-seg"></div>
+    <div class="act-seg"></div><div class="act-seg"></div><div class="act-seg"></div>
+    <div class="act-seg"></div><div class="act-seg"></div><div class="act-seg"></div>
+    <div class="act-seg"></div><div class="act-seg"></div><div class="act-seg"></div>
+    <div class="act-seg"></div><div class="act-seg"></div><div class="act-seg"></div>
+    <div class="act-seg"></div>
+  </div>
+
+  <!-- Region labels are generated by JS and tracked to 3D positions -->
+  <div id="region-labels"></div>
+
+  <!-- ── Agent Cards ── -->
+  <div class="agent-card" style="top:30%;left:5%;">
+    <div class="a-id">AGENT-01</div>
+    <div class="a-task">Qualifying new GHL lead</div>
+    <div class="a-prog-wrap"><div class="a-prog-fill" id="ap1"></div></div>
+    <div class="a-status running" id="as1">running...</div>
+  </div>
+  <div class="agent-card" style="top:30%;right:5%;">
+    <div class="a-id">AGENT-02</div>
+    <div class="a-task">Drafting outreach batch</div>
+    <div class="a-prog-wrap"><div class="a-prog-fill" id="ap2"></div></div>
+    <div class="a-status running" id="as2">running...</div>
+  </div>
+  <div class="agent-card" style="top:47%;left:5%;">
+    <div class="a-id">AGENT-03</div>
+    <div class="a-task">Scanning AI tool releases</div>
+    <div class="a-prog-wrap"><div class="a-prog-fill" id="ap3"></div></div>
+    <div class="a-status running" id="as3">running...</div>
+  </div>
+  <div class="agent-card" style="top:47%;right:5%;">
+    <div class="a-id">AGENT-04</div>
+    <div class="a-task">Rendering ad creative</div>
+    <div class="a-prog-wrap"><div class="a-prog-fill" id="ap4"></div></div>
+    <div class="a-status running" id="as4">running...</div>
+  </div>
+  <div class="agent-card" style="top:64%;left:5%;">
+    <div class="a-id">AGENT-05</div>
+    <div class="a-task">Auditing client pipeline</div>
+    <div class="a-prog-wrap"><div class="a-prog-fill" id="ap5"></div></div>
+    <div class="a-status running" id="as5">running...</div>
+  </div>
+  <div class="agent-card" style="top:64%;right:5%;">
+    <div class="a-id">AGENT-06</div>
+    <div class="a-task">Writing weekly rollup</div>
+    <div class="a-prog-wrap"><div class="a-prog-fill" id="ap6"></div></div>
+    <div class="a-status running" id="as6">running...</div>
+  </div>
+
+  <!-- ── Info Panels ── -->
+  <div class="info-panel" id="info-you" style="top:18%;left:5%;opacity:0;border-color:rgba(255,120,40,0.4);">
+    <div class="i-title" style="color:#f84;">WHAT I KNOW ABOUT YOU</div>
+    <div class="i-line">Founder runs Agent Core AI (service agency) and AI Monopoly Club (community).</div>
+    <div class="i-line">Hard rule: research and execute autonomously; never bounce back menus for things that can be looked up.</div>
+  </div>
+
+  <div class="info-panel" id="info-biz" style="top:42%;left:5%;opacity:0;border-color:rgba(255,70,40,0.4);max-width:360px;">
+    <div class="i-title" style="color:#f64;">WHAT I KNOW ABOUT THE BUSINESS</div>
+    <div class="i-line">Stack is Python-first, Local-first (127.0.0.1), no Node.js. Default to the free local model.</div>
+    <div class="i-line">Agent Core AI's core product is high-converting picture/video ad hooks that drive leads.</div>
+    <div class="i-line">CRM is GoHighLevel (GHL). Runtime: ops-center, NeuronLikeai Brain (Z.E.R.O.).</div>
+    <div class="i-line">8 sections: sales, accounts, creative, engineering, research, ops, finance, community.</div>
+    <div class="i-line">Safety model: full autonomy on free local model; real-money actions gated by hard approval.</div>
+    <div class="i-line">Tools: Claude Code, Hermes, multi-agent shared context + memory.</div>
+  </div>
+
+  <!-- ── Bottom bar ── -->
+  <div class="bottombar">
+    <div class="sections">
+      <div class="chip" id="s-sales">SALES</div>
+      <div class="chip" id="s-accts">ACCTS</div>
+      <div class="chip" id="s-crea">CREATIVE</div>
+      <div class="chip" id="s-eng">ENGRG</div>
+      <div class="chip" id="s-res">RESEARCH</div>
+      <div class="chip" id="s-ops">OPS</div>
+      <div class="chip" id="s-fin">FINANCE</div>
+      <div class="chip" id="s-comm">COMMUNITY</div>
+    </div>
+
+    <div class="terminal">
+      <span class="t-prompt">ZERO &gt;</span>
+      <span class="t-text" id="t-text">LISTENING FOR "HEY ZERO"...</span>
+      <div class="wave" id="wave"><span></span><span></span><span></span><span></span><span></span></div>
+    </div>
+
+    <div style="text-align:right;">
+      <div class="snd-btn" id="snd-btn">SOUND: OFF</div>
+      <div class="statusline">
+        <span class="on">● CONNECTED</span><br>
+        <span class="cnt" id="agent-active">6 AGENTS ACTIVE</span><br>
+        <span id="tasks-done">0 TASKS DONE</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="hint">DRAG TO ORBIT · PINCH OR SCROLL TO ZOOM · TAP A REGION TO FOCUS · SAY "HEY ZERO" · HOLD SCREEN OR PRESS SPACE TO WAKE</div>
+
+  <!-- ── Word Flash ── -->
+  <div class="word-flash" id="word-flash"></div>
+
+</div>
+
+<script>
+'use strict';
+
+// ════════════════════════════════════════════════════════
+//  3D Neural Brain Engine (vanilla, no dependencies)
+// ════════════════════════════════════════════════════════
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+const DPR = Math.min(window.devicePixelRatio || 1, 2);
+let W, H, t = 0;
+
+// Regions placed in unit 3D space (roughly anatomical)
+const REGIONS = [
+  { id:'prefrontal', name:'PREFRONTAL',    stat:'140 neurons · firing 0.8k', c:[ 0.05,-0.62, 0.55], col:'#6060ff', n:20, fill:80 },
+  { id:'motor',      name:'MOTOR CORTEX',  stat:'190 neurons · firing 0.8k', c:[-0.15,-0.70, 0.05], col:'#ff4444', n:22, fill:80 },
+  { id:'assoc',      name:'ASSOCIATION',   stat:'260 neurons · firing 0.5k', c:[ 0.10,-0.15, 0.10], col:'#cc44ff', n:20, fill:50 },
+  { id:'concept',    name:'CONCEPT LAYER', stat:'160 neurons · firing 0.8k', c:[ 0.55,-0.35, 0.35], col:'#00ccff', n:16, fill:80 },
+  { id:'sensory',    name:'SENSORY CORTEX',stat:'300 neurons · firing 0.6k', c:[-0.68,-0.10, 0.15], col:'#00cc66', n:22, fill:60 },
+  { id:'predictive', name:'PREDICTIVE',    stat:'180 neurons · firing 0.6k', c:[ 0.68,-0.05,-0.15], col:'#ff8800', n:17, fill:60 },
+  { id:'feature',    name:'FEATURE LAYER', stat:'100 neurons · firing 0.8k', c:[-0.10, 0.20,-0.40], col:'#dddd44', n:14, fill:80 },
+  { id:'language',   name:'LANGUAGE',      stat:'170 neurons · firing 0.6k', c:[-0.55, 0.35, 0.30], col:'#00ff88', n:16, fill:60 },
+  { id:'hippo',      name:'HIPPOCAMPUS',   stat:'160 neurons · firing 0.8k', c:[ 0.45, 0.42, 0.30], col:'#00cccc', n:16, fill:80 },
+  { id:'brainstem',  name:'BRAINSTEM',     stat:'120 neurons · firing 0.8k', c:[ 0.00, 0.72, 0.00], col:'#ff5500', n:12, fill:80 },
+  { id:'cerebellum', name:'CEREBELLUM',    stat:'PLANNED',                   c:[ 0.40, 0.62,-0.35], col:'#aa44ff', n:10, fill:0  },
+  { id:'reflex',     name:'REFLEX ARC',    stat:'PLANNED',                   c:[-0.45, 0.62,-0.30], col:'#bbbbbb', n:9,  fill:0  },
+];
+
+const nodes = [];
+const edges = [];   // precomputed pairs [i, j]
+let pulses = [];
+
+REGIONS.forEach((reg, ri) => {
+  reg.idx = [];
+  for (let i = 0; i < reg.n; i++) {
+    // spherical jitter around region center
+    const th = Math.random() * Math.PI * 2;
+    const ph = Math.acos(2 * Math.random() - 1);
+    const rr = Math.cbrt(Math.random()) * 0.22;
+    reg.idx.push(nodes.length);
+    nodes.push({
+      ri,
+      bx: reg.c[0] + rr * Math.sin(ph) * Math.cos(th),
+      by: reg.c[1] + rr * Math.sin(ph) * Math.sin(th),
+      bz: reg.c[2] + rr * Math.cos(ph),
+      col: reg.col,
+      size: Math.random() * 1.6 + 0.9,
+      phase: Math.random() * Math.PI * 2,
+      spd: Math.random() * 0.35 + 0.12,
+      drift: Math.random() * 0.03 + 0.012,
+      firing: false,
+      fireT: Math.random() * 5,
+      // scratch: projected coords, filled each frame
+      sx: 0, sy: 0, ss: 0, sz: 0,
+    });
+  }
+});
+
+// Precompute edges once: 3 nearest neighbors in-region + sparse cross-region links
+(function buildEdges() {
+  const d2 = (a, b) => {
+    const dx = a.bx-b.bx, dy = a.by-b.by, dz = a.bz-b.bz;
+    return dx*dx + dy*dy + dz*dz;
+  };
+  const seen = new Set();
+  const addEdge = (i, j) => {
+    const key = i < j ? i + '-' + j : j + '-' + i;
+    if (!seen.has(key)) { seen.add(key); edges.push([i, j]); }
+  };
+  REGIONS.forEach(reg => {
+    reg.idx.forEach(i => {
+      const dists = reg.idx.filter(j => j !== i)
+        .map(j => [j, d2(nodes[i], nodes[j])])
+        .sort((a, b) => a[1] - b[1]);
+      for (let k = 0; k < Math.min(3, dists.length); k++) addEdge(i, dists[k][0]);
+    });
+  });
+  // cross-region: link each region to its 3 nearest region-neighbors with 3 edges each
+  for (let a = 0; a < REGIONS.length; a++) {
+    const near = REGIONS.map((r, b) => [b,
+        (r.c[0]-REGIONS[a].c[0])**2 + (r.c[1]-REGIONS[a].c[1])**2 + (r.c[2]-REGIONS[a].c[2])**2])
+      .filter(x => x[0] !== a)
+      .sort((x, y) => x[1] - y[1])
+      .slice(0, 3);
+    near.forEach(([b]) => {
+      for (let k = 0; k < 3; k++) {
+        addEdge(
+          REGIONS[a].idx[Math.floor(Math.random() * REGIONS[a].idx.length)],
+          REGIONS[b].idx[Math.floor(Math.random() * REGIONS[b].idx.length)]
+        );
+      }
+    });
+  }
+})();
+
+// ── Camera (orbit + zoom + focus) ──
+const cam = {
+  yaw: 0.3, pitch: -0.1, zoom: 1,
+  tYaw: 0.3, tPitch: -0.1, tZoom: 1,
+  auto: true,
+};
+let focusedRegion = null;
+
+function project(x, y, z) {
+  // yaw about Y
+  const cy = Math.cos(cam.yaw), sy = Math.sin(cam.yaw);
+  const x1 = x * cy + z * sy;
+  const z1 = -x * sy + z * cy;
+  // pitch about X
+  const cp = Math.cos(cam.pitch), sp = Math.sin(cam.pitch);
+  const y1 = y * cp - z1 * sp;
+  const z2 = y * sp + z1 * cp;
+  const persp = 3;
+  const s = persp / (persp - z2 * cam.zoom * 0.9);
+  const R = Math.min(W, H) * 0.34 * cam.zoom;
+  return { x: W/2 + x1 * R * s, y: H/2 + y1 * R * s, s, z: z2 };
+}
+
+function resize() {
+  W = window.innerWidth; H = window.innerHeight;
+  canvas.width = W * DPR; canvas.height = H * DPR;
+  canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+}
+window.addEventListener('resize', resize);
+resize();
+
+function hex2rgb(h) {
+  return [parseInt(h.slice(1,3),16), parseInt(h.slice(3,5),16), parseInt(h.slice(5,7),16)];
+}
+
+// ── Region labels: HTML elements tracked to 3D anchors ──
+const labelWrap = document.getElementById('region-labels');
+REGIONS.forEach(reg => {
+  const el = document.createElement('div');
+  el.className = 'region';
+  el.style.borderColor = reg.col + '66';
+  el.innerHTML =
+    `<div class="r-name" style="color:${reg.col}">${reg.name}</div>` +
+    `<div class="r-stat">${reg.stat}</div>` +
+    (reg.fill ? `<div class="r-bar-wrap"><div class="r-bar-fill" style="width:${reg.fill}%;background:${reg.col};"></div></div>` : '');
+  el.addEventListener('click', () => focusRegion(reg, el));
+  labelWrap.appendChild(el);
+  reg.el = el;
+});
+
+function focusRegion(reg, el) {
+  document.querySelectorAll('.region.focused').forEach(e => e.classList.remove('focused'));
+  if (focusedRegion === reg) {           // unfocus
+    focusedRegion = null;
+    cam.tZoom = 1; cam.auto = true;
+    return;
+  }
+  focusedRegion = reg;
+  el.classList.add('focused');
+  cam.auto = false;
+  const [x, y, z] = reg.c;
+  cam.tYaw = Math.atan2(x, z);
+  cam.tPitch = Math.atan2(y, Math.hypot(x, z));
+  cam.tZoom = 1.55;
+  blip(660, 0.08);
+}
+
+// ── Interaction: drag orbit, pinch/wheel zoom, hold-to-wake ──
+const pointers = new Map();   // pointerId → {sx, sy, x, y}
+let dragging = false, lastX = 0, lastY = 0, lastPinch = 0, lpTimer = null;
+
+canvas.addEventListener('contextmenu', e => e.preventDefault());
+
+canvas.addEventListener('pointerdown', e => {
+  pointers.set(e.pointerId, { sx: e.clientX, sy: e.clientY, x: e.clientX, y: e.clientY });
+  clearTimeout(lpTimer);
+  if (pointers.size === 1) {
+    dragging = true; lastX = e.clientX; lastY = e.clientY;
+    canvas.classList.add('dragging');
+    cam.auto = false;
+    // hold still ~650ms → wake (phone equivalent of spacebar)
+    lpTimer = setTimeout(() => {
+      if (pointers.size === 1) {
+        wake();
+        if (navigator.vibrate) navigator.vibrate(30);
+      }
+    }, 650);
+  } else if (pointers.size === 2) {
+    const [a, b] = [...pointers.values()];
+    lastPinch = Math.hypot(a.x - b.x, a.y - b.y);
+  }
+});
+
+window.addEventListener('pointermove', e => {
+  const p = pointers.get(e.pointerId);
+  if (!p) return;
+  p.x = e.clientX; p.y = e.clientY;
+  if (Math.hypot(p.x - p.sx, p.y - p.sy) > 12) clearTimeout(lpTimer);
+  if (pointers.size === 1 && dragging) {
+    cam.tYaw += (e.clientX - lastX) * 0.005;
+    cam.tPitch = Math.max(-1.2, Math.min(1.2, cam.tPitch + (e.clientY - lastY) * 0.005));
+    lastX = e.clientX; lastY = e.clientY;
+  } else if (pointers.size === 2) {
+    const [a, b] = [...pointers.values()];
+    const d = Math.hypot(a.x - b.x, a.y - b.y);
+    if (lastPinch > 0) {
+      cam.tZoom = Math.max(0.5, Math.min(2.2, cam.tZoom * (d / lastPinch)));
+    }
+    lastPinch = d;
+  }
+});
+
+function endPointer(e) {
+  pointers.delete(e.pointerId);
+  clearTimeout(lpTimer);
+  if (pointers.size < 2) lastPinch = 0;
+  if (pointers.size === 0) {
+    dragging = false;
+    canvas.classList.remove('dragging');
+    if (!focusedRegion) setTimeout(() => { if (!dragging) cam.auto = true; }, 4000);
+  }
+}
+window.addEventListener('pointerup', endPointer);
+window.addEventListener('pointercancel', endPointer);
+
+canvas.addEventListener('wheel', e => {
+  e.preventDefault();
+  cam.tZoom = Math.max(0.5, Math.min(2.2, cam.tZoom - e.deltaY * 0.0012));
+}, { passive: false });
+
+// ── Render loop ──
+function frame() {
+  requestAnimationFrame(frame);
+  t += 0.016;
+
+  if (cam.auto) cam.tYaw += 0.0016;   // slow idle orbit
+  cam.yaw   += (cam.tYaw   - cam.yaw)   * 0.06;
+  cam.pitch += (cam.tPitch - cam.pitch) * 0.06;
+  cam.zoom  += (cam.tZoom  - cam.zoom)  * 0.06;
+
+  ctx.fillStyle = 'rgba(0,0,0,0.16)';
+  ctx.fillRect(0, 0, W, H);
+
+  // center glow
+  const pulse = 0.14 + 0.08 * Math.sin(t * 2.8);
+  const gr0 = ctx.createRadialGradient(W/2, H/2, 0, W/2, H/2, 110 * cam.zoom);
+  gr0.addColorStop(0, `rgba(200,210,255,${pulse})`);
+  gr0.addColorStop(0.35, `rgba(60,60,200,${pulse * 0.4})`);
+  gr0.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.beginPath(); ctx.arc(W/2, H/2, 110 * cam.zoom, 0, Math.PI * 2);
+  ctx.fillStyle = gr0; ctx.fill();
+
+  // update + project nodes
+  for (const nd of nodes) {
+    nd.fireT -= 0.016;
+    if (nd.fireT <= 0) {
+      nd.firing = !nd.firing;
+      nd.fireT = nd.firing ? (Math.random() * 1.2 + 0.4) : (Math.random() * 4 + 2.5);
+      if (nd.firing && Math.random() < 0.3) spawnPulseFrom(nodes.indexOf(nd));
+    }
+    const jx = nd.bx + Math.sin(t * nd.spd + nd.phase) * nd.drift;
+    const jy = nd.by + Math.cos(t * nd.spd * 0.71 + nd.phase) * nd.drift;
+    const jz = nd.bz + Math.sin(t * nd.spd * 0.53 + nd.phase * 2) * nd.drift;
+    const p = project(jx, jy, jz);
+    nd.sx = p.x; nd.sy = p.y; nd.ss = p.s; nd.sz = p.z;
+  }
+
+  // edges (precomputed — no per-frame O(n²))
+  for (const [i, j] of edges) {
+    const a = nodes[i], b = nodes[j];
+    const depth = (a.sz + b.sz) / 2;               // -1 back … +1 front
+    const alp = (0.06 + 0.13 * (depth + 1) / 2) *
+                (focusedRegion ? (nodes[i].ri === regionIndex(focusedRegion) || nodes[j].ri === regionIndex(focusedRegion) ? 1.6 : 0.35) : 1);
+    const [ar,ag,ab] = hex2rgb(a.col);
+    const [br,bg,bb] = hex2rgb(b.col);
+    const gr = ctx.createLinearGradient(a.sx, a.sy, b.sx, b.sy);
+    gr.addColorStop(0, `rgba(${ar},${ag},${ab},${alp})`);
+    gr.addColorStop(1, `rgba(${br},${bg},${bb},${alp})`);
+    ctx.beginPath(); ctx.moveTo(a.sx, a.sy); ctx.lineTo(b.sx, b.sy);
+    ctx.strokeStyle = gr; ctx.lineWidth = 0.5; ctx.stroke();
+  }
+
+  // pulses
+  pulses = pulses.filter(p => {
+    p.p += p.spd;
+    if (p.p >= 1) return false;
+    const a = nodes[p.i], b = nodes[p.j];
+    const x = a.sx + (b.sx - a.sx) * p.p;
+    const y = a.sy + (b.sy - a.sy) * p.p;
+    const [r,g,bl] = hex2rgb(a.col);
+    const gp = ctx.createRadialGradient(x, y, 0, x, y, 5);
+    gp.addColorStop(0, `rgba(${r},${g},${bl},0.9)`);
+    gp.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.beginPath(); ctx.arc(x, y, 5, 0, Math.PI * 2);
+    ctx.fillStyle = gp; ctx.fill();
+    return true;
+  });
+
+  // nodes back-to-front
+  const order = nodes.slice().sort((a, b) => a.sz - b.sz);
+  for (const nd of order) {
+    const [r,g,b] = hex2rgb(nd.col);
+    const depthFade = 0.35 + 0.65 * (nd.sz + 1) / 2;
+    const dim = focusedRegion && nd.ri !== regionIndex(focusedRegion) ? 0.35 : 1;
+    const alpha = (nd.firing ? 0.95 : 0.5 + 0.18 * Math.sin(t * 2 + nd.phase)) * depthFade * dim;
+    const sz = nd.size * nd.ss * (nd.firing ? 2.2 : 1);
+    const glow = (nd.firing ? 13 : 7) * nd.ss;
+    const gn = ctx.createRadialGradient(nd.sx, nd.sy, 0, nd.sx, nd.sy, glow);
+    gn.addColorStop(0, `rgba(${r},${g},${b},${alpha})`);
+    gn.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.beginPath(); ctx.arc(nd.sx, nd.sy, glow, 0, Math.PI * 2);
+    ctx.fillStyle = gn; ctx.fill();
+    ctx.beginPath(); ctx.arc(nd.sx, nd.sy, sz, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(${r},${g},${b},${Math.min(1, alpha * 1.5)})`;
+    ctx.fill();
+  }
+
+  // reposition region labels at projected 3D anchors
+  for (const reg of REGIONS) {
+    const p = project(reg.c[0] * 1.35, reg.c[1] * 1.35, reg.c[2] * 1.35);
+    const front = (p.z + 1) / 2;                    // 0 back … 1 front
+    reg.el.style.transform = `translate(-50%,-50%) translate(${p.x}px,${p.y}px) scale(${0.75 + 0.35 * front})`;
+    reg.el.style.opacity = (0.25 + 0.75 * front).toFixed(2);
+    reg.el.style.zIndex = Math.round(front * 100);
+  }
+}
+
+function regionIndex(reg) { return REGIONS.indexOf(reg); }
+
+function spawnPulseFrom(i) {
+  const cand = edges.filter(e => e[0] === i || e[1] === i);
+  if (!cand.length) return;
+  const [a, b] = cand[Math.floor(Math.random() * cand.length)];
+  pulses.push({ i: a, j: b, p: 0, spd: Math.random() * 0.03 + 0.015 });
+}
+
+frame();
+
+// ════════════════════════════════════════════════════════
+//  Sound (WebAudio, off by default)
+// ════════════════════════════════════════════════════════
+let audioCtx = null, soundOn = false;
+const sndBtn = document.getElementById('snd-btn');
+sndBtn.addEventListener('click', () => {
+  soundOn = !soundOn;
+  sndBtn.textContent = 'SOUND: ' + (soundOn ? 'ON' : 'OFF');
+  sndBtn.classList.toggle('on', soundOn);
+  if (soundOn && !audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (soundOn) blip(520, 0.07);
+});
+
+function blip(freq, dur) {
+  if (!soundOn || !audioCtx) return;
+  const o = audioCtx.createOscillator();
+  const g = audioCtx.createGain();
+  o.type = 'sine'; o.frequency.value = freq;
+  g.gain.setValueAtTime(0.08, audioCtx.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + dur);
+  o.connect(g); g.connect(audioCtx.destination);
+  o.start(); o.stop(audioCtx.currentTime + dur);
+}
+
+function wakeChime() { blip(440, 0.1); setTimeout(() => blip(880, 0.15), 110); }
+
+// ════════════════════════════════════════════════════════
+//  Voice wake word — "Hey Zero" (Web Speech API + Space)
+// ════════════════════════════════════════════════════════
+const micChip = document.getElementById('mic-chip');
+const micTxt  = document.getElementById('mic-txt');
+const tEl     = document.getElementById('t-text');
+const waveEl  = document.getElementById('wave');
+const ringEl  = document.getElementById('wake-ring');
+let awake = false;
+
+function wake() {
+  if (awake) return;
+  awake = true;
+  micChip.className = 'mic-chip wake';
+  micTxt.textContent = 'WAKE WORD DETECTED';
+  tEl.textContent = 'YES SIR — LISTENING...';
+  tEl.classList.add('awake');
+  waveEl.classList.add('on');
+  ringEl.classList.remove('fire'); void ringEl.offsetWidth; ringEl.classList.add('fire');
+  wakeChime();
+  setTimeout(() => {
+    awake = false;
+    tEl.classList.remove('awake');
+    waveEl.classList.remove('on');
+    micChip.className = speechLive ? 'mic-chip live' : 'mic-chip';
+    micTxt.textContent = speechLive ? 'MIC LIVE · SAY "HEY ZERO"' : 'MIC OFFLINE · PRESS SPACE TO WAKE';
+  }, 4000);
+}
+
+window.addEventListener('keydown', e => {
+  if (e.code === 'Space' && e.target === document.body) { e.preventDefault(); wake(); }
+});
+
+let speechLive = false, speechBlocked = false, recRef = null;
+(function initSpeech() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { micTxt.textContent = 'NO MIC API · TAP HERE OR HOLD SCREEN TO WAKE'; return; }
+  try {
+    const rec = recRef = new SR();
+    rec.continuous = true;
+    rec.interimResults = true;
+    rec.lang = 'en-US';
+    rec.onstart = () => {
+      speechLive = true; speechBlocked = false;
+      if (!awake) { micChip.className = 'mic-chip live'; micTxt.textContent = 'MIC LIVE · SAY "HEY ZERO"'; }
+    };
+    rec.onresult = ev => {
+      for (let i = ev.resultIndex; i < ev.results.length; i++) {
+        const txt = ev.results[i][0].transcript.toLowerCase();
+        if (/\bhey,?\s*zero\b|\bhay,?\s*zero\b|\bhey,?\s*hero\b/.test(txt)) wake();
+      }
+    };
+    rec.onerror = ev => {
+      speechLive = false;
+      if (ev.error === 'not-allowed' || ev.error === 'service-not-allowed') {
+        speechBlocked = true;   // don't auto-retry; needs a user tap
+        micChip.className = 'mic-chip';
+        micTxt.textContent = 'TAP HERE TO ENABLE MIC';
+      }
+    };
+    rec.onend = () => {
+      speechLive = false;
+      if (speechBlocked) return;
+      if (!awake) { micChip.className = 'mic-chip'; micTxt.textContent = 'MIC OFFLINE · TAP HERE OR HOLD SCREEN'; }
+      setTimeout(() => { try { rec.start(); } catch (_) {} }, 2000);
+    };
+    rec.start();
+  } catch (_) { micTxt.textContent = 'MIC UNAVAILABLE · TAP HERE OR HOLD SCREEN TO WAKE'; }
+})();
+
+// Tap the mic chip: enable the mic (user gesture unlocks it on mobile),
+// or act as a wake button when speech isn't available at all.
+micChip.addEventListener('click', () => {
+  if (recRef && !speechLive) {
+    speechBlocked = false;
+    try { recRef.start(); return; } catch (_) {}
+  }
+  if (!recRef) wake();
+});
+
+// ════════════════════════════════════════════════════════
+//  UI Logic
+// ════════════════════════════════════════════════════════
+
+// Persistence
+const store = {
+  get tasks()  { return parseInt(localStorage.getItem('zero.tasks') || '0', 10); },
+  set tasks(v) { localStorage.setItem('zero.tasks', v); },
+  get uptime() { return parseInt(localStorage.getItem('zero.uptime') || '0', 10); },
+  set uptime(v){ localStorage.setItem('zero.uptime', v); },
+};
+let tasksDone = store.tasks;
+const priorUptime = store.uptime;
+const sessionStart = Date.now();
+document.getElementById('sb-tasks').textContent = tasksDone;
+document.getElementById('tasks-done').textContent = tasksDone + ' TASKS DONE';
+
+function totalUptime() { return priorUptime + Math.floor((Date.now() - sessionStart) / 1000); }
+setInterval(() => {
+  const s = totalUptime();
+  const hh = String(Math.floor(s / 3600)).padStart(2, '0');
+  const mm = String(Math.floor((s % 3600) / 60)).padStart(2, '0');
+  const ss = String(s % 60).padStart(2, '0');
+  document.getElementById('sb-uptime').textContent = `${hh}:${mm}:${ss}`;
+}, 1000);
+setInterval(() => { store.uptime = totalUptime(); }, 5000);
+
+// Jitter live metrics
+setInterval(() => {
+  document.getElementById('neuron-count').textContent = (1800 + Math.floor(Math.random() * 100)).toLocaleString();
+  document.getElementById('fire-rate').textContent = (0.6 + Math.random() * 0.4).toFixed(1) + 'k/s';
+  document.getElementById('conn-count').textContent = String(edges.length);
+  document.getElementById('m-cpu').textContent = (1 + Math.floor(Math.random() * 6)) + '%';
+  document.getElementById('m-ops').textContent = (800 + Math.floor(Math.random() * 100)) + '/s';
+}, 1500);
+
+// Activity graph
+const actSegs = document.querySelectorAll('.act-seg');
+setInterval(() => {
+  actSegs.forEach(seg => seg.classList.toggle('on', Math.random() < 0.55));
+}, 300);
+
+// Section chip rotation
+const SECTION_IDS = ['s-sales','s-accts','s-crea','s-eng','s-res','s-ops','s-fin','s-comm'];
+let activeChip = 0;
+document.getElementById(SECTION_IDS[0]).classList.add('active');
+setInterval(() => {
+  document.getElementById(SECTION_IDS[activeChip]).classList.remove('active');
+  activeChip = (activeChip + 1) % SECTION_IDS.length;
+  document.getElementById(SECTION_IDS[activeChip]).classList.add('active');
+}, 2000);
+
+// Agent progress + completion
+const agents = [1,2,3,4,5,6].map(n => ({
+  prog: 'ap' + n, status: 'as' + n, progress: Math.random() * 50 + 10,
+}));
+agents.forEach(a => { document.getElementById(a.prog).style.width = a.progress + '%'; });
+
+setInterval(() => {
+  let running = 0;
+  agents.forEach(a => {
+    const st = document.getElementById(a.status);
+    if (!st.classList.contains('running')) return;
+    running++;
+    a.progress = Math.min(100, a.progress + Math.random() * 3 + 0.5);
+    document.getElementById(a.prog).style.width = a.progress + '%';
+    if (a.progress >= 100) {
+      st.className = 'a-status complete';
+      st.textContent = '✓ complete';
+      blip(740, 0.09);
+      tasksDone++; store.tasks = tasksDone;
+      document.getElementById('tasks-done').textContent = tasksDone + ' TASKS DONE';
+      document.getElementById('sb-tasks').textContent = tasksDone;
+      setTimeout(() => {
+        a.progress = Math.random() * 15;
+        document.getElementById(a.prog).style.width = a.progress + '%';
+        st.className = 'a-status running';
+        st.textContent = 'running...';
+      }, 4000 + Math.random() * 4000);
+    }
+  });
+  const act = agents.filter(a => document.getElementById(a.status).classList.contains('running')).length;
+  document.getElementById('agent-active').textContent = act + ' AGENT' + (act !== 1 ? 'S' : '') + ' ACTIVE';
+  document.getElementById('sb-agents').textContent = act;
+}, 800);
+
+// View cycling — live counter, info panels, word flash
+const WORDS = ['CODE', 'AND', 'DRIVING,', 'THAT', 'BUSINESS.', 'PROJECT', 'SIR.'];
+let view = 0, wordIdx = 0;
+const wordEl  = document.getElementById('word-flash');
+const infoYou = document.getElementById('info-you');
+const infoBiz = document.getElementById('info-biz');
+
+function cycleView() {
+  view = (view + 1) % 7;
+  document.getElementById('live-txt').textContent = `LIVE 0${view + 1} / 07`;
+  wordEl.textContent = WORDS[wordIdx++ % WORDS.length];
+  wordEl.style.opacity = '1';
+  setTimeout(() => { wordEl.style.opacity = '0'; }, 2000);
+  infoYou.style.opacity = view >= 3 && view <= 5 ? '1' : '0';
+  infoBiz.style.opacity = view >= 4 && view <= 5 ? '1' : '0';
+}
+setInterval(cycleView, 6500);
+cycleView();
+
+// Terminal rotating messages (paused while awake)
+const TERMINAL_MSGS = [
+  'LISTENING FOR "HEY ZERO"...',
+  'QUALIFYING NEW GHL LEAD...',
+  'DRAFTING OUTREACH BATCH...',
+  'SCANNING AI TOOL RELEASES...',
+  'RENDERING AD CREATIVE...',
+  'AUDITING CLIENT PIPELINE...',
+  'WRITING WEEKLY ROLLUP...',
+  'ALL AGENTS RUNNING · PARALLEL MINDS ACTIVE',
+  'PERSISTENT MEMORY · CONTEXT LOADED',
+  'PYTHON · LOCAL-FIRST · FREE MODEL',
+];
+let tIdx = 0;
+setInterval(() => {
+  if (!awake) tEl.textContent = TERMINAL_MSGS[tIdx++ % TERMINAL_MSGS.length];
+}, 3500);
+</script>
+</body>
+</html>

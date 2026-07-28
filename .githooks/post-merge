@@ -1,0 +1,46 @@
+#!/usr/bin/env bash
+# post-merge — runs after `git pull` / `git merge`.
+# Auto-refreshes generated assets and bumps the service-worker cache version
+# when a released file changes. Safe no-op if Python/PIL aren't installed.
+set -euo pipefail
+
+repo_root="$(git rev-parse --show-toplevel)"
+cd "$repo_root"
+
+# Files whose changes should trigger icon regeneration
+changed="$(git diff-tree -r --name-only --no-commit-id ORIG_HEAD HEAD 2>/dev/null || true)"
+
+need_icons=false
+need_sw_bump=false
+
+if echo "$changed" | grep -qE '^(scripts/gen_icons\.py|manifest\.webmanifest)$'; then
+  need_icons=true
+fi
+if echo "$changed" | grep -qE '^(index\.html|sw\.js|manifest\.webmanifest|icons/)'; then
+  need_sw_bump=true
+fi
+
+if $need_icons; then
+  echo "[post-merge] regenerating PWA icons…"
+  if command -v python3 >/dev/null && python3 -c "import PIL" >/dev/null 2>&1; then
+    python3 scripts/gen_icons.py || echo "[post-merge] icon script failed (non-fatal)"
+  else
+    echo "[post-merge] skip: python3 + Pillow not available (pip install pillow)"
+  fi
+fi
+
+if $need_sw_bump; then
+  # Bump patch version stamp so browsers refresh the cache
+  ts="$(date -u +%Y%m%d%H%M%S)"
+  if [ -f sw.js ]; then
+    if grep -q "BUILD_STAMP" sw.js; then
+      sed -i.bak -E "s/(BUILD_STAMP *= *\")[^\"]*(\")/\1${ts}\2/" sw.js && rm -f sw.js.bak
+    else
+      # Inject a stamp constant near the top on first run
+      sed -i.bak -E "1a const BUILD_STAMP = \"${ts}\";" sw.js && rm -f sw.js.bak
+    fi
+    echo "[post-merge] sw.js BUILD_STAMP=${ts}"
+  fi
+fi
+
+echo "[post-merge] done."

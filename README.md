@@ -197,26 +197,24 @@
 ##### :black_small_square: AI Tools &amp; Agents
 
 <p>
+&nbsp;&nbsp;:small_orange_diamond: <a href="https://21st.dev"><b>21st.dev</b></a> - copy-paste premium React and Tailwind components: hero sections, navbars, pricing tables, and cards built for AI-generated sites.<br>
+&nbsp;&nbsp;:small_orange_diamond: <a href="https://www.skool.com/ai-marketing-hub"><b>AI Marketing Hub</b></a> - free 2,000+ member community for AI tools, marketing automation, and open-source Claude Code SEO skills; run by Daniel (Agrici Daniel).<br>
+&nbsp;&nbsp;:small_orange_diamond: <a href="https://buildpartner.ai/"><b>BuildPartner</b></a> - AI-accelerated product development on Claude Code; build SaaS products 10x faster without hiring a CTO or senior engineer.<br>
+&nbsp;&nbsp;:small_orange_diamond: <a href="https://www.youtube.com/watch?v=-IozMG9x0dI"><b>Claude Code Advanced Course (Nick Saraev)</b></a> - 3-hour deep-dive: advanced CLAUDE.md, agent harnesses, parallelization, stochastic consensus, autoresearch, browser automation, workspace org, and security.<br>
 &nbsp;&nbsp;:small_orange_diamond: <a href="https://code.claude.com/docs/en/best-practices"><b>Claude Code Best Practices</b></a> - official guide covering CLAUDE.md, plan mode, hooks, MCP, skills, subagents, and parallel sessions.<br>
 &nbsp;&nbsp;:small_orange_diamond: <a href="https://code.claude.com/docs/en/claude-code-on-the-web"><b>Claude Managed Agents</b></a> - Anthropic-hosted agent runtime: agent/environment/session model, secrets vault, scheduling, Gmail/Slack integrations, and production deployment in four steps.<br>
-&nbsp;&nbsp;:small_orange_diamond: <a href="https://www.youtube.com/watch?v=-IozMG9x0dI"><b>Claude Code Advanced Course (Nick Saraev)</b></a> - 3-hour deep-dive: advanced CLAUDE.md, agent harnesses, parallelization, stochastic consensus, autoresearch, browser automation, workspace org, and security.<br>
-&nbsp;&nbsp;:small_orange_diamond: <a href="https://github.com/nousresearch/hermes-agent"><b>Hermes Agent /learn command</b></a> - teach Hermes once from any URL, PDF, doc, or code folder; it distills the content into a reusable skill.md that auto-loads in future sessions.<br>
-&nbsp;&nbsp;:small_orange_diamond: <a href="https://hermes-agent.nousresearch.com/"><b>Hermes Agent OS</b></a> - full Agent Operating System: Oracle (SEO posts), Jarvis (voice control), Paperclip agent teams, Obsidian memory layer, and morning brief automation.<br>
-&nbsp;&nbsp;:small_orange_diamond: <a href="https://21st.dev"><b>21st.dev</b></a> - copy-paste premium React and Tailwind components: hero sections, navbars, pricing tables, and cards built for AI-generated sites.<br>
-&nbsp;&nbsp;:small_orange_diamond: <a href="https://claude-seo.md"><b>Claude SEO</b></a> - 12 open-source Claude Code skills replacing a $5–10K/month SEO agency stack: parallel audits, schema generation, GEO optimization, PDF reports, sitemap, hreflang, and competitor analysis.<br>
-&nbsp;&nbsp;:small_orange_diamond: <a href="https://rankenstein.pro"><b>Rankenstein Pro</b></a> - AI article creation system for SEO content at scale; used as the demo site in the Claude SEO audit walkthrough.<br>
-&nbsp;&nbsp;:small_orange_diamond: <a href="https://buildpartner.ai/"><b>BuildPartner</b></a> - AI-accelerated product development on Claude Code; build SaaS products 10x faster without hiring a CTO or senior engineer.<br>
 &nbsp;&nbsp;:small_orange_diamond: <a href="https://firecrawl.dev/"><b>Firecrawl</b></a> - crawl any URL and return clean structured markdown; used as a blueprint extractor for design references in Claude Code builds.<br>
 &nbsp;&nbsp;:small_orange_diamond: <a href="https://glaido.com"><b>Glaido</b></a> - voice-to-text dictation tool for developers; speak prompts and code instructions directly into Claude Code and any editor.<br>
+&nbsp;&nbsp;:small_orange_diamond: <a href="https://hermes-agent.nousresearch.com/"><b>Hermes Agent OS</b></a> - full Agent Operating System: Oracle (SEO posts), Jarvis (voice control), Paperclip agent teams, Obsidian memory layer, and morning brief automation.<br>
 &nbsp;&nbsp;:small_orange_diamond: <a href="https://kie.ai/"><b>Kie.ai</b></a> - AI image generation for web projects; generate hero imagery, brand visuals, and custom graphics for Claude-built sites.<br>
-&nbsp;&nbsp;:small_orange_diamond: <a href="https://openrouter.ai/"><b>OpenRouter</b></a> - unified API that routes prompts to 200+ LLMs; swap models mid-session (Opus for architecture, Haiku for polish) without changing code.<br>
-&nbsp;&nbsp;:small_orange_diamond: <a href="https://vercel.com/"><b>Vercel</b></a> - free static site hosting with GitHub integration; deploy Claude-built websites live in one click with auto-deploy on every push.<br>
 &nbsp;&nbsp;:small_orange_diamond: <a href="https://lovable.dev/"><b>Lovable AI</b></a> - prompt-to-app AI builder; describe a web app in plain English and get a working full-stack app deployed in minutes.<br>
 &nbsp;&nbsp;:small_orange_diamond: <a href="https://opencode.ai/"><b>Opencode</b></a> - open-source AI coding agent; drop-in alternative to Claude Code for running agentic harnesses locally.<br>
-&nbsp;&nbsp;:small_orange_diamond: <a href="https://venice.ai/home"><b>Venice AI</b></a> - private, uncensored model hosting for executing agentic harnesses with open-source models instead of frontier APIs.<br>
-&nbsp;&nbsp;:small_orange_diamond: <a href="https://vcinc.ai/"><b>Vibe Coding Incubator</b></a> - AI-first developer training: build real apps with LLMs, prompting patterns, and agentic workflows from idea to deployment.<br>
+&nbsp;&nbsp;:small_orange_diamond: <a href="https://openrouter.ai/"><b>OpenRouter</b></a> - unified API that routes prompts to 200+ LLMs; swap models mid-session (Opus for architecture, Haiku for polish) without changing code.<br>
 &nbsp;&nbsp;:small_orange_diamond: <a href="https://rankexpand.com/"><b>Rank Expand Academy</b></a> - agency + training program covering local SEO, AI automation, and Claude Code website builds that generate organic revenue for local businesses.<br>
-&nbsp;&nbsp;:small_orange_diamond: <a href="https://www.skool.com/ai-marketing-hub"><b>AI Marketing Hub</b></a> - free 2,000+ member community for AI tools, marketing automation, and open-source Claude Code SEO skills; run by Daniel (Agrici Daniel).<br>
+&nbsp;&nbsp;:small_orange_diamond: <a href="https://rankenstein.pro"><b>Rankenstein Pro</b></a> - AI article creation system for SEO content at scale; used as the demo site in the Claude SEO audit walkthrough.<br>
+&nbsp;&nbsp;:small_orange_diamond: <a href="https://venice.ai/home"><b>Venice AI</b></a> - private, uncensored model hosting for executing agentic harnesses with open-source models instead of frontier APIs.<br>
+&nbsp;&nbsp;:small_orange_diamond: <a href="https://vercel.com/"><b>Vercel</b></a> - free static site hosting with GitHub integration; deploy Claude-built websites live in one click with auto-deploy on every push.<br>
+&nbsp;&nbsp;:small_orange_diamond: <a href="https://vcinc.ai/"><b>Vibe Coding Incubator</b></a> - AI-first developer training: build real apps with LLMs, prompting patterns, and agentic workflows from idea to deployment.<br>
 &nbsp;&nbsp;:small_orange_diamond: <a href="https://wisprflow.com/"><b>Wispr Flow</b></a> - system-wide voice-to-text for Mac; dictate prompts, CLAUDE.md entries, and steering corrections into any app including Claude Code.<br>
 </p>
 
@@ -431,16 +429,16 @@
 
 <p>
 &nbsp;&nbsp;:small_orange_diamond: <a href="https://accessibe.com/"><b>AccessiBe</b></a> - AI-powered ADA &amp; WCAG accessibility compliance overlay; auto-remediates common accessibility barriers on any website.<br>
+&nbsp;&nbsp;:small_orange_diamond: <a href="https://www.awwwards.com"><b>Awwwards</b></a> - curated gallery of award-winning websites; use as a design reference for layout, motion, and visual innovation.<br>
+&nbsp;&nbsp;:small_orange_diamond: <a href="https://dribbble.com"><b>Dribbble</b></a> - design inspiration community for UI mockups, hero layouts, color palettes, and component patterns.<br>
 &nbsp;&nbsp;:small_orange_diamond: <a href="https://www.fgfunnels.com/"><b>FGFunnels</b></a> - all-in-one funnel, course, and membership platform built for coaches and content creators.<br>
 &nbsp;&nbsp;:small_orange_diamond: <a href="https://www.gohighlevel.com/"><b>GoHighLevel</b></a> - white-label CRM and marketing automation platform: funnels, pipelines, SMS/email, calendars, and reputation management in one dashboard.<br>
 &nbsp;&nbsp;:small_orange_diamond: <a href="https://leadgenjay.com/"><b>GoHighLevel CLI (Lead Gen Jay)</b></a> - free CLI that exposes GoHighLevel workflows, triggers, and email operations as terminal commands so Claude Code can build entire automations without opening the dashboard.<br>
-&nbsp;&nbsp;:small_orange_diamond: <a href="https://github.com/nousresearch/hermes-agent"><b>Hermes Agent</b></a> - self-hosted, self-improving open-source AI agent with persistent memory, multi-platform messaging, and skill-building loop.<br>
+&nbsp;&nbsp;:small_orange_diamond: <a href="https://github.com/nousresearch/hermes-agent"><b>Hermes Agent</b></a> - self-hosted, self-improving open-source AI agent with persistent memory, multi-platform messaging, and skill-building loop; the /learn command distills any URL, PDF, doc, or code folder into a reusable skill.md.<br>
 &nbsp;&nbsp;:small_orange_diamond: <a href="https://www.hlprotools.com/"><b>HLProTools</b></a> - premium third-party add-ons and snapshots that extend GoHighLevel with pre-built workflows, templates, and automations.<br>
-&nbsp;&nbsp;:small_orange_diamond: <a href="https://www.openbugbounty.org/"><b>Openbugbounty</b></a> - allows any security researcher reporting a vulnerability on any website.<br>
-&nbsp;&nbsp;:small_orange_diamond: <a href="https://socialbee.com/"><b>SocialBee</b></a> - AI social media scheduler with category-based content recycling, team collaboration, and multi-platform publishing.<br>
-&nbsp;&nbsp;:small_orange_diamond: <a href="https://www.awwwards.com"><b>Awwwards</b></a> - curated gallery of award-winning websites; use as a design reference for layout, motion, and visual innovation.<br>
-&nbsp;&nbsp;:small_orange_diamond: <a href="https://dribbble.com"><b>Dribbble</b></a> - design inspiration community for UI mockups, hero layouts, color palettes, and component patterns.<br>
 &nbsp;&nbsp;:small_orange_diamond: <a href="https://www.hostinger.com"><b>Hostinger</b></a> - affordable web hosting and domain registration; recommended deployment target for Claude-generated static sites.<br>
 &nbsp;&nbsp;:small_orange_diamond: <a href="https://www.mongodb.com/atlas"><b>MongoDB Atlas</b></a> - free-tier cloud database; powers the content store for Claude-built CMS systems with a 512MB free cluster.<br>
+&nbsp;&nbsp;:small_orange_diamond: <a href="https://www.openbugbounty.org/"><b>Openbugbounty</b></a> - allows any security researcher reporting a vulnerability on any website.<br>
+&nbsp;&nbsp;:small_orange_diamond: <a href="https://socialbee.com/"><b>SocialBee</b></a> - AI social media scheduler with category-based content recycling, team collaboration, and multi-platform publishing.<br>
 &nbsp;&nbsp;:small_orange_diamond: <a href="https://www.wavv.com/"><b>Wavv</b></a> - power dialer with triple-line calling, spam label protection, and CRM integration for high-volume outbound sales.<br>
 </p>

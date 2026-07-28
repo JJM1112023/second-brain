@@ -1,3 +1,10 @@
+---
+name: review
+description: Write-review-fix loop for a shell script or the current branch's changed .sh files
+argument-hint: "[path/to/script.sh]"
+user-invocable: true
+---
+
 # /review — Write-Review-Fix Loop
 
 Run this skill on any shell script (or the current branch diff) to perform a full
@@ -6,8 +13,10 @@ build-review-fix cycle without human intervention between steps.
 ## Steps
 
 1. **Identify target** — use the argument passed to `/review` as the file path.
-   If no argument, review all `.sh` files changed in the current branch
-   (`git diff origin/master...HEAD --name-only | grep '\.sh$'`).
+   If no argument, review all `.sh` files changed in the current branch,
+   diffed against the branch the PR targets — `testing` in the standard flow
+   (`git diff origin/testing...HEAD --name-only | grep '\.sh$'`); substitute
+   the actual base branch if the PR targets something else.
 
 2. **Static analysis** — run ShellCheck:
    ```bash

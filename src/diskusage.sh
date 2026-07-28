@@ -52,7 +52,9 @@ check_filesystems() {
       printf 'OK:       %s\n' "${line}"
     fi
     : "${mount}"
-  done < <(df -h | grep -vE '^(Filesystem|tmpfs|udev)' | awk 'NR>0{print}')
+  # -P (POSIX) keeps each filesystem on one line — plain df -h wraps long
+  # device names, which puts a non-numeric value in $5 and breaks the checks.
+  done < <(df -hP | grep -vE '^(Filesystem|tmpfs|udev)' | awk 'NR>0{print}')
 
   return "${exit_code}"
 }
