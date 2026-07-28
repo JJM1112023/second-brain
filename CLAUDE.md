@@ -30,7 +30,6 @@ This is a curated "Awesome" list repository — a collection of tools, manuals, 
 ├── .github/workflows/
 │   ├── ci.yml               # CI: ShellCheck, bats, PWA, README, icon jobs (PRs + master/testing)
 │   └── links.yml            # Weekly README dead-link check (lychee; not PR-blocking)
-├── .travis.yml              # Legacy CI config (superseded by GitHub Actions; kept for history)
 ├── .gitignore               # Ignores log/ directory
 ├── _config.yml              # GitHub Pages config (serves index.html, excludes docs/scripts)
 │
@@ -188,8 +187,6 @@ When editing PWA shell files (`index.html`, `sw.js`, `manifest.webmanifest`, `ic
 5. **Icon generator smoke test** — `test/gen_icons_test.py` with Pillow
 
 `.github/workflows/links.yml` additionally runs a **weekly lychee dead-link check** over README.md (plus manual dispatch). It is deliberately not PR-blocking so third-party outages and link rot never fail unrelated changes.
-
-`.travis.yml` is the legacy CI config, kept only for history; Travis no longer runs.
 
 ## Content Conventions (README.md)
 
