@@ -1,59 +1,15 @@
 #!/usr/bin/env bash
 # pre-push — lint before publishing.
 # Blocks a push if manifest.webmanifest, sw.js, or index.html are broken.
+# The actual checks live in scripts/validate-pwa.sh so CI runs the same gate.
 set -euo pipefail
 
 repo_root="$(git rev-parse --show-toplevel)"
 cd "$repo_root"
 
-fail=0
-say(){ printf "\033[36m[pre-push]\033[0m %s\n" "$*"; }
-err(){ printf "\033[31m[pre-push]\033[0m %s\n" "$*"; fail=1; }
-
-# 1. Manifest JSON validity + required fields
-if [ -f manifest.webmanifest ]; then
-  say "checking manifest.webmanifest…"
-  python3 - <<'PY' || err "manifest.webmanifest is not valid JSON or missing keys"
-import json, sys, os
-m = json.load(open("manifest.webmanifest"))
-for k in ("name","start_url","display","icons"):
-    assert k in m, f"missing key: {k}"
-assert any(i.get("sizes")=="192x192" for i in m["icons"]), "need 192x192 icon"
-assert any(i.get("sizes")=="512x512" for i in m["icons"]), "need 512x512 icon"
-for i in m["icons"]:
-    p = i["src"]
-    if not os.path.exists(p):
-        raise SystemExit(f"icon file missing: {p}")
-print("  manifest OK")
-PY
-fi
-
-# 2. Service worker syntax check via node if available, else basic sanity
-if [ -f sw.js ]; then
-  say "checking sw.js…"
-  if command -v node >/dev/null 2>&1; then
-    node --check sw.js || err "sw.js has JS syntax errors"
-  else
-    grep -q "addEventListener" sw.js || err "sw.js looks empty"
-  fi
-fi
-
-# 3. index.html sanity — must have manifest link + SW registration
-if [ -f index.html ]; then
-  say "checking index.html…"
-  grep -q 'rel="manifest"' index.html || err "index.html missing <link rel=\"manifest\">"
-  grep -q "serviceWorker" index.html || err "index.html missing SW registration"
-  # unbalanced <script> tags catch
-  o=$(grep -oE "<script(\s|>)" index.html | wc -l)
-  c=$(grep -oE "</script>" index.html | wc -l)
-  [ "$o" = "$c" ] || err "unbalanced <script> tags in index.html ($o open / $c close)"
-fi
-
-if [ "$fail" -ne 0 ]; then
+if ! bash scripts/validate-pwa.sh; then
   echo
   echo "  push blocked. fix the errors above and try again."
   echo "  bypass (not recommended): git push --no-verify"
   exit 1
 fi
-
-say "all checks passed."
