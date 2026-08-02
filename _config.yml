@@ -1,14 +1,24 @@
-# GitHub Pages config — serve the immersive index.html directly.
+# GitHub Pages config — serve index.html and zero-brain/ directly.
+# Everything excluded here is source or tooling with no business being
+# published: repo-facing docs, bash utilities, tests, and the Obsidian vault
+# (a git deliverable you open locally, not a web page).
 theme: null
 plugins: []
 exclude:
   - CLAUDE.md
+  - CLAUDE.local.md
   - CONTRIBUTING.md
   - CODE_OF_CONDUCT.md
   - LICENSE.md
+  - PWA-AND-HOOKS.md
+  - SECOND_BRAIN_INDEX.md
   - bin
   - lib
   - src
   - skel
-  - .travis.yml
+  - test
+  - scripts
+  - vault
   - .claude
+  - .githooks
+  - .github

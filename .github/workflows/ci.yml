@@ -21,7 +21,9 @@ jobs:
           shellcheck -s bash -e 1072,1094 -x
           src/*.sh lib/common.sh bin/git-template-full
           scripts/validate-pwa.sh scripts/check-readme.sh scripts/install-hooks.sh
+          scripts/check-vault.sh scripts/check-all.sh
           .githooks/pre-push .githooks/post-merge
+          .claude/hooks/check-readme-links.sh .claude/hooks/shellcheck-edited.sh
 
   bats:
     name: Bats tests
@@ -50,6 +52,25 @@ jobs:
       - uses: actions/checkout@v4
       - name: Check README quality
         run: bash scripts/check-readme.sh
+
+  vault:
+    name: Second brain (vault + console data)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Generator unit tests
+        run: python3 test/gen_secondbrain_test.py
+      - name: Vault integrity (links, frontmatter, reachability)
+        run: bash scripts/check-vault.sh
+      - name: Generated files are committed and current
+        run: |
+          python3 scripts/gen_secondbrain.py
+          if ! git diff --exit-code --stat; then
+            echo
+            echo "::error::vault/, zero-brain/brain*.js|json or SECOND_BRAIN_INDEX.md is stale."
+            echo "Run 'python3 scripts/gen_secondbrain.py' and commit the result."
+            exit 1
+          fi
 
   icons:
     name: Icon generator smoke test

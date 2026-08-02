@@ -14,6 +14,7 @@ setup() {
   cp "${REPO_ROOT}/sw.js" "${FIXTURE}/"
   cp "${REPO_ROOT}/index.html" "${FIXTURE}/"
   cp -r "${REPO_ROOT}/icons" "${FIXTURE}/icons"
+  cp -r "${REPO_ROOT}/zero-brain" "${FIXTURE}/zero-brain"
   cp "${REPO_ROOT}/.githooks/pre-push" "${FIXTURE}/.githooks/"
   cp "${REPO_ROOT}/scripts/validate-pwa.sh" "${FIXTURE}/scripts/"
 }
@@ -72,4 +73,47 @@ run_hook() {
   run_hook
   [ "$status" -eq 1 ]
   [[ "$output" == *"precached asset missing"* ]]
+}
+
+@test "pre-push: blocks when a precached directory index is missing" {
+  rm "${FIXTURE}/zero-brain/index.html"
+  run_hook
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"zero-brain/index.html not found"* ]]
+}
+
+@test "pre-push: blocks when the console loses its brain data" {
+  rm "${FIXTURE}/zero-brain/brain-data.js"
+  run_hook
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"brain-data.js missing"* ]]
+}
+
+@test "pre-push: blocks when the console stops loading brain-data.js" {
+  sed -i 's|src="brain-data.js"|src="nope.js"|' "${FIXTURE}/zero-brain/index.html"
+  run_hook
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"does not load brain-data.js"* ]]
+}
+
+@test "pre-push: blocks when brain-data.js has syntax errors" {
+  command -v node >/dev/null 2>&1 || skip "node not available"
+  printf 'function broken( {\n' >> "${FIXTURE}/zero-brain/brain-data.js"
+  run_hook
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"brain-data.js has JS syntax errors"* ]]
+}
+
+@test "pre-push: blocks when the landing page stops linking the console" {
+  sed -i 's|href="zero-brain/"|href="#collection"|' "${FIXTURE}/index.html"
+  run_hook
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"does not link to zero-brain/"* ]]
+}
+
+@test "pre-push: blocks when the console loses its SW registration" {
+  sed -i "s|serviceWorker|nopeWorker|g" "${FIXTURE}/zero-brain/index.html"
+  run_hook
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"zero-brain/index.html missing SW registration"* ]]
 }

@@ -6,7 +6,7 @@
  *   - Nav requests: network-first, fall back to cached shell (works offline)
  *   - New SW takes control immediately; page can prompt for refresh
  */
-const VERSION = "v1.0.0";
+const VERSION = "v1.1.0";
 const SHELL = "ninja-shell-" + VERSION;
 const RUNTIME = "ninja-runtime-" + VERSION;
 
@@ -18,6 +18,11 @@ const SHELL_ASSETS = [
   "./icons/icon-512.png",
   "./icons/maskable-512.png",
   "./icons/favicon-64.png",
+  // Z.E.R.O. second-brain console — brain-data.js carries the whole graph,
+  // so precaching these two makes the console fully usable offline.
+  "./zero-brain/",
+  "./zero-brain/index.html",
+  "./zero-brain/brain-data.js",
 ];
 
 self.addEventListener("install", (event) => {
@@ -55,7 +60,14 @@ self.addEventListener("fetch", (event) => {
           caches.open(RUNTIME).then((c) => c.put(req, copy));
           return res;
         })
-        .catch(() => caches.match("./index.html").then((r) => r || caches.match("./")))
+        // Offline: prefer this page's own precached copy (so /zero-brain/
+        // serves the console, not the landing page), then fall back to the shell.
+        .catch(() =>
+          caches
+            .match(req, { ignoreSearch: true })
+            .then((r) => r || caches.match("./index.html"))
+            .then((r) => r || caches.match("./"))
+        )
     );
     return;
   }

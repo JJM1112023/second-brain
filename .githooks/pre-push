@@ -1,15 +1,24 @@
 #!/usr/bin/env bash
 # pre-push — lint before publishing.
-# Blocks a push if manifest.webmanifest, sw.js, or index.html are broken.
-# The actual checks live in scripts/validate-pwa.sh so CI runs the same gate.
+# Blocks a push if the PWA shell is broken, or if the generated second brain
+# (vault/ + zero-brain data) is stale relative to its sources.
+# The actual checks live in scripts/ so CI runs the same gates.
 set -euo pipefail
 
 repo_root="$(git rev-parse --show-toplevel)"
 cd "$repo_root"
 
-if ! bash scripts/validate-pwa.sh; then
+blocked() {
   echo
   echo "  push blocked. fix the errors above and try again."
   echo "  bypass (not recommended): git push --no-verify"
   exit 1
+}
+
+bash scripts/validate-pwa.sh || blocked
+
+# Only gate the vault when the checker is present — keeps the hook usable in
+# trimmed-down checkouts and in the PWA fixture repos used by the test suite.
+if [ -f scripts/check-vault.sh ]; then
+  bash scripts/check-vault.sh || blocked
 fi
