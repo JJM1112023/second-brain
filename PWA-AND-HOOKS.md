@@ -3,7 +3,7 @@
 ## Install as an app
 
 ### Android (Chrome)
-1. Visit https://jjm1112023.github.io/awesome-ninja-admins/
+1. Visit https://jjm1112023.github.io/second-brain/
 2. Chrome menu (⋮) → **Install app** (or **Add to Home screen**)
 3. Launches full-screen, works offline after first load.
 

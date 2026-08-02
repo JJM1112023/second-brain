@@ -14,7 +14,7 @@ by `scripts/gen_secondbrain.py`, so none of it can drift out of sync.
 | Face | Open it with | Best for |
 |---|---|---|
 | **Obsidian mind map** | Open `vault/` as a vault → `Home` → `Ctrl/Cmd+G` | Thinking, linking, writing |
-| **Z.E.R.O. console** | `zero-brain/index.html`, or [live](https://jjm1112023.github.io/awesome-ninja-admins/zero-brain/) | Searching, exploring the graph, capturing |
+| **Z.E.R.O. console** | `zero-brain/index.html`, or [live](https://jjm1112023.github.io/second-brain/zero-brain/) | Searching, exploring the graph, capturing |
 | **This index** | Right here | Skimming the whole catalog as text |
 
 ```bash

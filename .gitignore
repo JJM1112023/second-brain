@@ -10,3 +10,7 @@ vault/.trash/
 
 # Personal session overrides — see CLAUDE.md.
 CLAUDE.local.md
+
+# Python bytecode — created whenever the test suite imports the generator.
+__pycache__/
+*.pyc
