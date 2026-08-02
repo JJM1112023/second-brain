@@ -33,7 +33,11 @@ from pathlib import Path
 VAULT = Path("vault")
 failures = []
 
-notes = sorted(p for p in VAULT.rglob("*.md"))
+# vault/Private/ is the gitignored clone of the private half of the brain —
+# personal notes, never part of this repo, never checked by this gate.
+notes = sorted(
+    p for p in VAULT.rglob("*.md") if "Private" not in p.relative_to(VAULT).parts
+)
 by_name = {}
 for note in notes:
     by_name.setdefault(note.stem, note)
