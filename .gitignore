@@ -11,6 +11,11 @@ vault/.trash/
 # Personal session overrides — see CLAUDE.md.
 CLAUDE.local.md
 
+# The private half of the second brain. Clone JJM1112023/second-brain-private
+# into vault/Private/ for one unified Obsidian graph — its notes must never
+# be committed to this public repository.
+vault/Private/
+
 # Python bytecode — created whenever the test suite imports the generator.
 __pycache__/
 *.pyc
