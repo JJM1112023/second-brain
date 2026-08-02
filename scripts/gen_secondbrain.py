@@ -39,8 +39,8 @@ INDEX_MD = ROOT / "SECOND_BRAIN_INDEX.md"
 GEN_BEGIN = "<!-- BEGIN GENERATED: skill-catalog -->"
 GEN_END = "<!-- END GENERATED: skill-catalog -->"
 
-REPO_URL = "https://github.com/JJM1112023/awesome-ninja-admins"
-PAGES_URL = "https://jjm1112023.github.io/awesome-ninja-admins"
+REPO_URL = "https://github.com/JJM1112023/second-brain"
+PAGES_URL = "https://jjm1112023.github.io/second-brain"
 
 # ── Pillars ────────────────────────────────────────────────────────────────
 # The one hand-maintained mapping in this file. Any skill missing from it lands

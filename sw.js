@@ -6,7 +6,7 @@
  *   - Nav requests: network-first, fall back to cached shell (works offline)
  *   - New SW takes control immediately; page can prompt for refresh
  */
-const VERSION = "v1.1.0";
+const VERSION = "v1.2.0";
 const SHELL = "ninja-shell-" + VERSION;
 const RUNTIME = "ninja-runtime-" + VERSION;
 
