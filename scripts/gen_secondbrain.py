@@ -575,6 +575,16 @@ def emit_vault(model: dict) -> dict[str, str]:
             "map instead of a flat folder listing.\n",
             "`scripts/check-vault.sh` fails the build if any wikilink points at a note that",
             "does not exist, or if a note is unreachable from `Home`.\n",
+            "## The private half\n",
+            "This repository is public, so everything above is visible to anyone. Personal",
+            "notes live in a **separate private repository** cloned into `Private/` here:\n",
+            "```bash",
+            "git clone https://github.com/JJM1112023/second-brain-private vault/Private",
+            "```\n",
+            "`vault/Private/` is gitignored by the public repo and skipped by every check,",
+            "so Obsidian shows one unified graph — public knowledge plus private thinking —",
+            "while git keeps the two histories completely separate. Commit and push private",
+            "notes from inside `vault/Private/`; they only ever go to the private repo.\n",
         ]
     )
 

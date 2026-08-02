@@ -35,3 +35,17 @@ map instead of a flat folder listing.
 
 `scripts/check-vault.sh` fails the build if any wikilink points at a note that
 does not exist, or if a note is unreachable from `Home`.
+
+## The private half
+
+This repository is public, so everything above is visible to anyone. Personal
+notes live in a **separate private repository** cloned into `Private/` here:
+
+```bash
+git clone https://github.com/JJM1112023/second-brain-private vault/Private
+```
+
+`vault/Private/` is gitignored by the public repo and skipped by every check,
+so Obsidian shows one unified graph — public knowledge plus private thinking —
+while git keeps the two histories completely separate. Commit and push private
+notes from inside `vault/Private/`; they only ever go to the private repo.
