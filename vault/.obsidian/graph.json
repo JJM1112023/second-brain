@@ -1,0 +1,51 @@
+{
+  "collapse-filter": false,
+  "search": "",
+  "showTags": true,
+  "showAttachments": false,
+  "hideUnresolved": true,
+  "showOrphans": false,
+  "collapse-color-groups": false,
+  "colorGroups": [
+    {
+      "query": "tag:#pillar",
+      "color": {
+        "a": 1,
+        "rgb": 16755200
+      }
+    },
+    {
+      "query": "tag:#skill",
+      "color": {
+        "a": 1,
+        "rgb": 52735
+      }
+    },
+    {
+      "query": "tag:#tools",
+      "color": {
+        "a": 1,
+        "rgb": 16729156
+      }
+    },
+    {
+      "query": "tag:#moc",
+      "color": {
+        "a": 1,
+        "rgb": 65416
+      }
+    }
+  ],
+  "collapse-display": false,
+  "showArrow": true,
+  "textFadeMultiplier": -0.4,
+  "nodeSizeMultiplier": 1.35,
+  "lineSizeMultiplier": 1.1,
+  "collapse-forces": false,
+  "centerStrength": 0.42,
+  "repelStrength": 11,
+  "linkStrength": 0.85,
+  "linkDistance": 190,
+  "scale": 0.8,
+  "close": false
+}

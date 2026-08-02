@@ -40,6 +40,17 @@
 
 ***
 
+## Explore this list three ways
+
+| | |
+|---|---|
+| 🌐 **Immersive Codex** | [jjm1112023.github.io/awesome-ninja-admins](https://jjm1112023.github.io/awesome-ninja-admins/) — the 3D landing page, installable as an offline app |
+| 🧠 **Z.E.R.O. second brain** | [/zero-brain/](https://jjm1112023.github.io/awesome-ninja-admins/zero-brain/) — every tool and AI skill as a searchable knowledge graph |
+| 🗺️ **Obsidian mind map** | Clone the repo, open `vault/` as an Obsidian vault, then `Home` → `Ctrl/Cmd+G` |
+
+The vault and the graph are generated from this README plus `.claude/skills/`, so
+they never drift from the list below. Rebuild with `python3 scripts/gen_secondbrain.py`.
+
 ## Who is Ninja Admins?
 
 - race of pure evil who rule the network through a monarchistic feudelic system

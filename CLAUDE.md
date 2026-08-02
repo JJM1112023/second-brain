@@ -12,8 +12,9 @@ This is a curated "Awesome" list repository — a collection of tools, manuals, 
 
 1. **Bash utility scripts** — working sysadmin scripts live in `src/`, sharing helpers from `lib/common.sh`.
 2. **A Progressive Web App (PWA)** — an immersive 3D landing page (`index.html`) served via GitHub Pages, installable and offline-capable through a service worker (`sw.js`) and web manifest.
+3. **A second brain** — an Obsidian vault (`vault/`) and the Z.E.R.O. knowledge-graph console (`zero-brain/`), both **generated** from the repo's own skills and README by `scripts/gen_secondbrain.py`.
 
-**Tech stack:** Markdown (content), Bash (scripts), ShellCheck (linting), bats-core (functional tests), GitHub Actions (CI/CD), HTML/JS/Three.js + Service Worker (PWA), Python + Pillow (icon generation).
+**Tech stack:** Markdown (content), Bash (scripts), ShellCheck (linting), bats-core (functional tests), GitHub Actions (CI/CD), HTML/JS/Three.js + Service Worker (PWA), Python (icon generation with Pillow, second-brain generation with the stdlib).
 
 ## Repository Structure
 
@@ -26,17 +27,30 @@ This is a curated "Awesome" list repository — a collection of tools, manuals, 
 ├── CODE_OF_CONDUCT.md
 ├── LICENSE.md               # GNU license
 ├── PWA-AND-HOOKS.md         # PWA install guide + local git-hook automation docs
-├── SECOND_BRAIN_INDEX.md    # Master map of the skill/tool library (pillar-organized catalog)
+├── SECOND_BRAIN_INDEX.md    # Master map; its catalog section is GENERATED
 ├── .github/workflows/
-│   ├── ci.yml               # CI: ShellCheck, bats, PWA, README, icon jobs (PRs + master/testing)
+│   ├── ci.yml               # CI: shellcheck, bats, pwa, readme, vault, icons (PRs + master/testing)
 │   └── links.yml            # Weekly README dead-link check (lychee; not PR-blocking)
 ├── .gitignore               # Ignores log/ directory
-├── _config.yml              # GitHub Pages config (serves index.html, excludes docs/scripts)
+├── _config.yml              # GitHub Pages config (serves index.html + zero-brain/)
 │
 ├── index.html               # Immersive 3D "Codex" landing page (GitHub Pages / PWA shell)
 ├── manifest.webmanifest     # PWA manifest (name, icons, display mode)
 ├── sw.js                    # Service worker (offline precache + runtime caching)
 ├── icons/                   # Generated PWA icons (icon-192/512, maskable-512, favicon-64)
+│
+├── zero-brain/              # Z.E.R.O. second-brain console (second PWA page)
+│   ├── index.html           #   interactive 3D knowledge graph, search, roadmap, capture
+│   ├── brain-data.js        #   GENERATED — the graph payload as window.__BRAIN__
+│   └── brain.json           #   GENERATED — same payload, machine-readable export
+│
+├── vault/                   # GENERATED Obsidian vault — the mind map
+│   ├── Home.md              #   root map of content; open this, then Ctrl/Cmd+G
+│   ├── Pillars/             #   one note per pillar
+│   ├── Skills/              #   one note per .claude/skills/ entry
+│   ├── Tools/               #   one note per README category
+│   ├── Roadmap.md, Repo Map.md, Z.E.R.O. Console.md
+│   └── .obsidian/           #   preconfigured graph view + appearance
 │
 ├── src/                     # Bash utility scripts (real, working scripts)
 │   ├── syshealth.sh         #   system health report (load, memory, disk, services)
@@ -49,8 +63,9 @@ This is a curated "Awesome" list repository — a collection of tools, manuals, 
 ├── test/                    # Functional test suite (hermetic — stubs external commands)
 │   ├── test_helper.bash     #   shared bats setup: temp dirs + PATH-based command stubs
 │   ├── common.bats          #   unit tests for lib/common.sh
-│   ├── *.bats               #   one suite per src/ script + the .githooks/ hooks
-│   └── gen_icons_test.py    #   icon generator smoke test (needs Pillow)
+│   ├── *.bats               #   one suite per src/ script, the .githooks/ hooks, the vault
+│   ├── gen_icons_test.py    #   icon generator smoke test (needs Pillow)
+│   └── gen_secondbrain_test.py  # second-brain generator tests (stdlib only)
 ├── skel/                    # Skeleton/template files (placeholder — .gitkeep only)
 ├── bin/
 │   └── git-template-full    # One-time signed-off-by git-template setup
@@ -58,7 +73,10 @@ This is a curated "Awesome" list repository — a collection of tools, manuals, 
 ├── scripts/
 │   ├── install-hooks.sh     # Point git at tracked .githooks/ (run once per clone)
 │   ├── validate-pwa.sh      # PWA shell validation (shared by pre-push hook + CI pwa job)
-│   ├── check-readme.sh      # README quality gate: link schemes, duplicates, entry format
+│   ├── check-readme.sh      # README quality gate: links, duplicates, format, stat accuracy
+│   ├── check-vault.sh       # Vault integrity: wikilinks, frontmatter, reachability, freshness
+│   ├── check-all.sh         # Run every gate CI runs, in one command
+│   ├── gen_secondbrain.py   # THE generator: skills + README → vault/ + zero-brain data
 │   └── gen_icons.py         # Regenerate PWA icons (needs python3 + Pillow)
 │
 ├── .githooks/               # Tracked git hooks (enabled via core.hooksPath)
@@ -124,12 +142,24 @@ bash scripts/install-hooks.sh
 
 | Hook          | What it does                                                                                     |
 | ------------- | ------------------------------------------------------------------------------------------------ |
-| `pre-push`    | Blocks the push if the PWA shell is broken — delegates to `scripts/validate-pwa.sh` (manifest JSON/keys/icons, `sw.js` syntax, `index.html` manifest link + SW registration, precache list consistency). The CI `pwa` job runs the same script. |
+| `pre-push`    | Blocks the push if the PWA shell is broken or the second brain is stale — delegates to `scripts/validate-pwa.sh` (manifest JSON/keys/icons, `sw.js` syntax, both HTML pages' manifest link + SW registration, `brain-data.js` wiring, precache list consistency) and `scripts/check-vault.sh`. The CI `pwa` and `vault` jobs run the same scripts. |
 | `post-merge`  | After a pull/merge, regenerates icons if `gen_icons.py`/`manifest.webmanifest` changed, and bumps the `sw.js` `BUILD_STAMP` when any PWA shell file changed. |
 
 Bypass when necessary: `git push --no-verify`. Icon regeneration needs `python3` + `pillow`; `sw.js` syntax check uses `node --check` when available (falls back to a grep sanity check). See `PWA-AND-HOOKS.md` for full details.
 
 ## Linting and Validation
+
+### Run everything at once
+
+```bash
+bash scripts/check-all.sh
+```
+
+Runs every gate CI runs — ShellCheck, bats, PWA, README, second brain, vault,
+icons — without stopping at the first failure, and prints a pass/fail/skip
+summary. Missing optional tooling (shellcheck, bats, Pillow) is reported as
+SKIP rather than failing. Use this before opening a PR; the individual gates
+below are for when you want to iterate on one of them.
 
 ### ShellCheck
 
@@ -176,15 +206,43 @@ It validates: manifest JSON + required keys + icon files, `sw.js` syntax (`node 
 
 When editing PWA shell files (`index.html`, `sw.js`, `manifest.webmanifest`, `icons/`), **always bump the `VERSION` constant in `sw.js`** — the cache names (`SHELL`/`RUNTIME`) derive from it, and only a `VERSION` change rotates them. The `post-merge` hook's `BUILD_STAMP` merely byte-changes `sw.js` so browsers re-install the service worker; it does not rotate cache names and is not a substitute for a `VERSION` bump.
 
+### Second brain (vault + Z.E.R.O. console)
+
+`scripts/gen_secondbrain.py` is the single source of truth for both. It parses
+`.claude/skills/*/SKILL.md` and `README.md`, applies the hand-maintained `PILLARS`
+map at the top of the script, and writes every downstream artifact:
+
+```bash
+python3 scripts/gen_secondbrain.py           # rebuild everything
+python3 scripts/gen_secondbrain.py --check   # report drift, write nothing (used by CI)
+bash scripts/check-vault.sh                  # links + frontmatter + reachability + freshness
+python3 test/gen_secondbrain_test.py         # generator unit tests
+```
+
+**Generated — never hand-edit:**
+
+- `vault/**` (except that the whole directory is regenerated; deleted sources have their notes swept)
+- `zero-brain/brain.json` and `zero-brain/brain-data.js`
+- the block between `<!-- BEGIN GENERATED: skill-catalog -->` and its `END` marker in `SECOND_BRAIN_INDEX.md`
+
+Hand-edit the *sources* instead (`SKILL.md` files, `README.md`, the `PILLARS` map,
+`zero-brain/index.html`), then rerun the generator and commit the result. Output is
+deterministic — no timestamps, everything sorted — so a stale checkout is caught by
+`git diff --exit-code` in CI.
+
+A skill missing from `PILLARS` is filed under an **Unsorted** pillar with a warning
+rather than being dropped, so nothing disappears silently.
+
 ### CI (GitHub Actions)
 
-`.github/workflows/ci.yml` runs five jobs on pushes to `master`/`testing` and on pull requests targeting those branches, so feature branches get feedback via their PR:
+`.github/workflows/ci.yml` runs six jobs on pushes to `master`/`testing` and on pull requests targeting those branches, so feature branches get feedback via their PR:
 
-1. **ShellCheck** — lints `src/`, `lib/common.sh`, `bin/git-template-full`, `scripts/*.sh`, and the `.githooks/` hooks
-2. **Bats tests** — `bats test/` (src scripts, common.sh, and the git hooks)
+1. **ShellCheck** — lints `src/`, `lib/common.sh`, `bin/git-template-full`, `scripts/*.sh`, the `.githooks/` hooks, and the `.claude/hooks/` validators
+2. **Bats tests** — `bats test/` (src scripts, common.sh, the git hooks, the vault checker)
 3. **PWA validation** — `scripts/validate-pwa.sh` (same gate as the local `pre-push` hook)
-4. **README checks** — `scripts/check-readme.sh` (link schemes, duplicate URLs, entry format)
-5. **Icon generator smoke test** — `test/gen_icons_test.py` with Pillow
+4. **README checks** — `scripts/check-readme.sh` (link schemes, duplicate URLs, entry format, landing-page stat accuracy)
+5. **Second brain** — `test/gen_secondbrain_test.py`, `scripts/check-vault.sh`, and a `git diff --exit-code` after regenerating, so a stale `vault/` or console payload fails the build
+6. **Icon generator smoke test** — `test/gen_icons_test.py` with Pillow
 
 `.github/workflows/links.yml` additionally runs a **weekly lychee dead-link check** over README.md (plus manual dispatch). It is deliberately not PR-blocking so third-party outages and link rot never fail unrelated changes.
 
@@ -219,16 +277,22 @@ All `href` values must start with `http://`, `https://`, `#`, or `mailto:` — t
 
 ### Existing categories in README.md
 
-- CLI Tools → Shells, Managers, Network, Databases
+- CLI Tools → Shells, Managers, Text & Search, Network, Databases
 - Web Tools → SSL, HTTP Headers, DNS, Mail, Mass scanners, Net-tools, Performance, Passwords
-- Manuals/Howtos/Tutorials → Bash, Unix tutorials, Hacking
+- Manuals/Howtos/Tutorials → Bash, Unix tutorials, AI Tools & Agents, Hacking
 - Blogs
 - Systems/Services → Systems, HTTP(s) Services, Security/hardening
+- Monitoring/Observability → System Monitoring, Log Management
+- DevOps & Cloud → Kubernetes, Infrastructure as Code, CI/CD, Cloud CLIs, Service Mesh
+- Infrastructure → Containers & Virtualization, Configuration Management, Backup & Recovery, VPN
+- Security → Identity & Access Management, Network Security & Firewall, Network Troubleshooting, Penetration Testing Tools
 - One-liners
 - Lists
 - Other
 
 When adding entries, place them in the most appropriate existing category before creating a new one.
+
+**After adding an entry, rerun the generator** (`python3 scripts/gen_secondbrain.py`) so `vault/` and the Z.E.R.O. console pick it up, and commit the regenerated files — CI fails if they are stale. Adding a *category* also means updating the landing-page stat tiles in `index.html`; `scripts/check-readme.sh` compares them against README and fails on a mismatch.
 
 ## Bash Script Standards
 
@@ -292,13 +356,14 @@ Create `CLAUDE.local.md` in the project root for personal session overrides (e.g
 ## What AI Assistants Should Know
 
 - **README is the primary deliverable.** Most contributions are new entries in `README.md`; some are Bash scripts in `src/` or PWA changes.
-- **No package build step.** There is no `npm install` or `make`. Markdown and the PWA are served as-is. The only "build" is `scripts/gen_icons.py`, which regenerates PWA icons (needs Pillow).
-- **Tests = ShellCheck + the bats suite (`bats test/`)** for Bash, **`scripts/validate-pwa.sh`** for the PWA (run by both the `pre-push` hook and CI), and **`scripts/check-readme.sh`** for README quality. All of these run in CI (GitHub Actions) on PRs, plus a weekly dead-link check.
+- **No package build step.** There is no `npm install` or `make`. Markdown and the PWA are served as-is. The two "builds" are both Python: `scripts/gen_icons.py` (PWA icons, needs Pillow) and `scripts/gen_secondbrain.py` (vault + console data, stdlib only).
+- **Tests = ShellCheck + the bats suite (`bats test/`)** for Bash, **`scripts/validate-pwa.sh`** for the PWA (run by both the `pre-push` hook and CI), **`scripts/check-readme.sh`** for README quality, and **`scripts/check-vault.sh`** + **`test/gen_secondbrain_test.py`** for the second brain. All of these run in CI (GitHub Actions) on PRs, plus a weekly dead-link check.
+- **`vault/` and `zero-brain/brain*.{json,js}` are generated.** Edit the sources and rerun `python3 scripts/gen_secondbrain.py`; never hand-edit the output. CI fails if the committed copies are stale.
 - **IMPORTANT: Signed commits are required.** Never commit without the signed-off-by line.
 - **IMPORTANT: PR target is `testing`**, not `master`.
-- **`src/` and `lib/` now contain real scripts** — no longer placeholders. `skel/` is still an empty placeholder (`.gitkeep` only). Do not delete `src/`, `lib/`, or `skel/`.
+- **`src/` and `lib/` contain real scripts** — their `.gitkeep` placeholders are gone. `skel/` is still an empty placeholder (`.gitkeep` only). Do not delete `src/`, `lib/`, or `skel/`.
 - **`log/` is gitignored** — do not commit anything to that directory.
 - **Enable the tracked hooks** with `bash scripts/install-hooks.sh` after cloning if you'll push PWA changes.
-- **When editing PWA shell files**, bump `sw.js` `VERSION` so caches refresh, and keep `index.html` ↔ `manifest.webmanifest` ↔ `icons/` in sync (the `pre-push` hook enforces the link).
+- **When editing PWA shell files**, bump `sw.js` `VERSION` so caches refresh, and keep `index.html` ↔ `zero-brain/index.html` ↔ `manifest.webmanifest` ↔ `icons/` in sync (the `pre-push` hook enforces the links). The shell is two pages now, not one.
 - **When compacting context**, preserve: the signed-off-by requirement, the PR target branch (`testing`), and any list of modified files.
 - **Explore before editing README.md** — read the current file first to avoid duplicate entries and ensure correct category placement.
