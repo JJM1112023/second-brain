@@ -19,6 +19,7 @@ python3 - <<'PY'
 import re
 import sys
 from collections import Counter
+from pathlib import Path
 
 content = open("README.md", encoding="utf-8").read()
 failures = []
@@ -40,6 +41,7 @@ if dupes:
 entry_pat = re.compile(
     r'^&nbsp;&nbsp;:small_orange_diamond: <a href="[^"]+"><b>[^<]+</b></a>.*<br>\s*$'
 )
+ENTRY_RE_MATCH = entry_pat.match
 bad_entries = [
     (n, line)
     for n, line in enumerate(content.splitlines(), 1)
@@ -48,6 +50,34 @@ bad_entries = [
 if bad_entries:
     listing = "; ".join(f"line {n}: {line[:80]!r}" for n, line in bad_entries[:5])
     failures.append(f"malformed entries ({len(bad_entries)}): {listing}")
+
+# 4. the landing page's headline stats must match reality
+entries = sum(1 for line in content.splitlines() if ENTRY_RE_MATCH(line))
+categories = sum(1 for line in content.splitlines() if line.startswith("#### "))
+subcategories = sum(1 for line in content.splitlines() if line.startswith("##### "))
+skills = len(list(Path(".claude/skills").glob("*/SKILL.md")))
+
+expected = {
+    "Top Categories": categories,
+    "Sub-Domains": subcategories,
+    "Curated Tools": entries,
+    "AI Skills": skills,
+}
+index_html = Path("index.html").read_text(encoding="utf-8")
+stats = dict(
+    (label, int(count))
+    for count, label in re.findall(
+        r'data-count="(\d+)"[^>]*>0</div><div class="l">([^<]+)</div>', index_html
+    )
+)
+for label, want in expected.items():
+    got = stats.get(label)
+    if got is None:
+        failures.append(f"index.html has no '{label}' stat tile")
+    elif got != want:
+        failures.append(
+            f"index.html '{label}' says {got}, README has {want}"
+        )
 
 if failures:
     print("README check FAILED:")
@@ -58,5 +88,9 @@ if failures:
 print(
     f"README OK: {len(links)} links checked, "
     f"{len(external)} external URLs unique, all entry lines well-formed"
+)
+print(
+    f"  landing-page stats match: {categories} categories, "
+    f"{subcategories} sub-domains, {entries} tools, {skills} skills"
 )
 PY

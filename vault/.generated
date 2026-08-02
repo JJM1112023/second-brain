@@ -1,0 +1,60 @@
+# Files owned by scripts/gen_secondbrain.py. Deleted when no longer
+# generated. Anything not listed here is yours and is left alone.
+.obsidian/app.json
+.obsidian/appearance.json
+.obsidian/core-plugins.json
+.obsidian/graph.json
+Home.md
+Pillars/Agent Engine.md
+Pillars/Business Launchpad.md
+Pillars/Jarvis Interface.md
+Pillars/Memory & Second Brain.md
+Pillars/Repo Maintenance.md
+Pillars/Tool Arsenal.md
+README.md
+Repo Map.md
+Roadmap.md
+Skills/add-entry.md
+Skills/advanced-claude-md.md
+Skills/agent-harness.md
+Skills/agent-os.md
+Skills/agent-teams.md
+Skills/agentic-harness.md
+Skills/always-on-agents.md
+Skills/autoresearch.md
+Skills/browser-automation.md
+Skills/buildpartner.md
+Skills/claude-cms.md
+Skills/claude-freelance.md
+Skills/claude-managed-agents.md
+Skills/claude-security.md
+Skills/claude-seo.md
+Skills/ghl-automation.md
+Skills/hermes-jarvis.md
+Skills/hermes-learn.md
+Skills/hermes-oracle.md
+Skills/human-validation.md
+Skills/lovable-ai.md
+Skills/morning-brief.md
+Skills/n8n-vs-mcp.md
+Skills/obsidian-memory.md
+Skills/paperclip-teams.md
+Skills/premium-website.md
+Skills/review.md
+Skills/skill-generator.md
+Skills/vibe-coding.md
+Skills/wispr-flow.md
+Skills/workspace-org.md
+Tools/Blogs.md
+Tools/CLI Tools.md
+Tools/DevOps & Cloud.md
+Tools/Infrastructure.md
+Tools/Lists.md
+Tools/Manuals · Howtos · Tutorials.md
+Tools/Monitoring · Observability.md
+Tools/One-liners.md
+Tools/Other.md
+Tools/Security.md
+Tools/Systems · Services.md
+Tools/Web Tools.md
+Z.E.R.O. Console.md

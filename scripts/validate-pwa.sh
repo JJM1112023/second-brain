@@ -53,18 +53,44 @@ else
   err "sw.js not found"
 fi
 
-# 3. index.html sanity — must have manifest link + SW registration
-if [ -f index.html ]; then
-  say "checking index.html…"
-  grep -q 'rel="manifest"' index.html || err "index.html missing <link rel=\"manifest\">"
-  grep -q "serviceWorker" index.html || err "index.html missing SW registration"
+# 3. Every HTML page in the shell must link the manifest, register the SW,
+#    and balance its <script> tags.
+check_page() {
+  page="$1"
+  if [ ! -f "$page" ]; then
+    err "$page not found"
+    return
+  fi
+  say "checking $page…"
+  grep -q 'rel="manifest"' "$page" || err "$page missing <link rel=\"manifest\">"
+  grep -q "serviceWorker" "$page" || err "$page missing SW registration"
   # grep -o counts every occurrence (not lines); || true keeps a zero-match
   # grep from tripping set -e / pipefail
-  o=$({ grep -oE "<script(\s|>)" index.html || true; } | wc -l)
-  c=$({ grep -oE "</script>" index.html || true; } | wc -l)
-  [ "$o" = "$c" ] || err "unbalanced <script> tags in index.html ($o open / $c close)"
-else
-  err "index.html not found"
+  o=$({ grep -oE "<script(\s|>)" "$page" || true; } | wc -l)
+  c=$({ grep -oE "</script>" "$page" || true; } | wc -l)
+  [ "$o" = "$c" ] || err "unbalanced <script> tags in $page ($o open / $c close)"
+}
+
+check_page index.html
+check_page zero-brain/index.html
+
+# 3b. The console is only useful with its generated data file loaded.
+if [ -f zero-brain/index.html ]; then
+  say "checking zero-brain data wiring…"
+  grep -q 'src="brain-data.js"' zero-brain/index.html \
+    || err "zero-brain/index.html does not load brain-data.js"
+  [ -f zero-brain/brain-data.js ] \
+    || err "zero-brain/brain-data.js missing — run: python3 scripts/gen_secondbrain.py"
+  [ -f zero-brain/brain.json ] \
+    || err "zero-brain/brain.json missing — run: python3 scripts/gen_secondbrain.py"
+  if command -v node >/dev/null 2>&1 && [ -f zero-brain/brain-data.js ]; then
+    node --check zero-brain/brain-data.js || err "zero-brain/brain-data.js has JS syntax errors"
+  fi
+fi
+
+# 3c. The landing page must link the console, or nobody will ever find it.
+if [ -f index.html ]; then
+  grep -q 'zero-brain/' index.html || err "index.html does not link to zero-brain/"
 fi
 
 # 4. Precache list in sw.js must only reference files that exist
@@ -77,8 +103,11 @@ if [ -f sw.js ]; then
   else
     while IFS= read -r asset; do
       rel="${asset#./}"
-      # "./" precaches the directory index — covered by the index.html check
+      # "./" and "sub/" precache a directory index — resolve them to index.html
       [ -z "$rel" ] && continue
+      case "$rel" in
+        */) rel="${rel}index.html" ;;
+      esac
       [ -f "$rel" ] || err "precached asset missing from repo: $asset"
     done <<< "$assets"
   fi

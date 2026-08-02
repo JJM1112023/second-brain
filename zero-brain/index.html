@@ -2,1011 +2,1118 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="description" content="Z.E.R.O. — an interactive knowledge graph over the awesome-ninja-admins skill library and curated sysadmin tool arsenal.">
+<meta name="theme-color" content="#000000">
 <title>Z.E.R.O. · AI Second Brain</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧠</text></svg>">
+<link rel="manifest" href="../manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="64x64" href="../icons/favicon-64.png">
+<link rel="apple-touch-icon" href="../icons/icon-192.png">
 <style>
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
+:root {
+  --cy: #00d2ff;
+  --dim: #6c8296;
+  --panel: rgba(4, 10, 16, 0.82);
+  --line: rgba(0, 200, 255, 0.22);
+}
+
+html, body { height: 100%; }
+
 body {
   background: #000;
-  color: #fff;
-  font-family: 'Courier New', monospace;
+  color: #dfeaf2;
+  font-family: 'SFMono-Regular', 'JetBrains Mono', Consolas, 'Courier New', monospace;
   overflow: hidden;
-  height: 100vh;
-  width: 100vw;
-  user-select: none;
+  font-size: 13px;
+  -webkit-text-size-adjust: 100%;
 }
 
 canvas#c { position: fixed; inset: 0; cursor: grab; touch-action: none; }
 canvas#c.dragging { cursor: grabbing; }
+canvas#c.pointing { cursor: pointer; }
 
-/* ── HUD wrapper ────────────────────────────────── */
-.hud { position: fixed; inset: 0; pointer-events: none; }
+/* ── HUD chrome ─────────────────────────────────── */
+.hud { position: fixed; inset: 0; pointer-events: none; z-index: 2; }
+.hud > * { pointer-events: auto; }
 
-/* Corner brackets */
-.corner {
-  position: absolute;
-  width: 36px; height: 36px;
-  border-color: rgba(0, 200, 255, 0.3);
-  border-style: solid;
-}
-.c-tl { top: 12px; left: 12px; border-width: 2px 0 0 2px; }
-.c-tr { top: 12px; right: 12px; border-width: 2px 2px 0 0; }
-.c-bl { bottom: 12px; left: 12px; border-width: 0 0 2px 2px; }
-.c-br { bottom: 12px; right: 12px; border-width: 0 2px 2px 0; }
+.corner { position: absolute; width: 30px; height: 30px; border-color: var(--line); border-style: solid; pointer-events: none; }
+.c-tl { top: 10px; left: 10px; border-width: 2px 0 0 2px; }
+.c-tr { top: 10px; right: 10px; border-width: 2px 2px 0 0; }
+.c-bl { bottom: 10px; left: 10px; border-width: 0 0 2px 2px; }
+.c-br { bottom: 10px; right: 10px; border-width: 0 2px 2px 0; }
 
-/* Scanline sweep */
 .scanline {
-  position: absolute;
-  left: 0; right: 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent 0%, rgba(0,210,255,0.12) 40%, rgba(0,210,255,0.18) 50%, rgba(0,210,255,0.12) 60%, transparent 100%);
-  animation: scan 5s linear infinite;
+  position: absolute; left: 0; right: 0; height: 1px; pointer-events: none;
+  background: linear-gradient(90deg, transparent, rgba(0,210,255,.16) 50%, transparent);
+  animation: scan 6s linear infinite;
 }
-@keyframes scan { from{top:0%} to{top:100%} }
+@keyframes scan { from { top: 0 } to { top: 100% } }
+@media (prefers-reduced-motion: reduce) { .scanline { animation: none; opacity: .25 } }
 
-/* ── Top bar ─────────────────────────────────────── */
+/* ── Top bar ────────────────────────────────────── */
 .topbar {
-  position: absolute;
-  top: 16px; left: 56px; right: 56px;
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
+  position: absolute; top: 14px; left: 50px; right: 50px;
+  display: flex; gap: 12px; align-items: flex-start; flex-wrap: wrap;
 }
+.brand { flex: 0 0 auto; }
+.brand-name { font-size: 15px; font-weight: 800; letter-spacing: 5px; color: #fff; }
+.brand-sub { font-size: 9px; letter-spacing: 2px; color: var(--dim); margin-top: 3px; }
 
-.brand { display: flex; flex-direction: column; }
-.brand-name {
-  font-size: 14px; font-weight: 900; letter-spacing: 4px; color: #fff;
-  text-shadow: 0 0 20px rgba(0,200,255,0.4);
+.searchwrap { flex: 1 1 260px; max-width: 460px; position: relative; }
+.searchbox {
+  width: 100%; background: var(--panel); border: 1px solid var(--line);
+  color: #eaf6ff; font: inherit; font-size: 12px; padding: 9px 34px 9px 11px;
+  border-radius: 3px; outline: none; backdrop-filter: blur(8px);
 }
-.brand-sub { font-size: 7.5px; color: #3a3a3a; letter-spacing: 2.5px; margin-top: 3px; }
-.mic-chip {
-  margin-top: 5px;
-  font-size: 7.5px; letter-spacing: 1px;
-  display: inline-flex; align-items: center; gap: 5px;
-  color: #555;
-  pointer-events: auto;
-  cursor: pointer;
+.searchbox:focus { border-color: rgba(0,210,255,.65); box-shadow: 0 0 0 2px rgba(0,210,255,.12); }
+.searchbox::placeholder { color: #4d6070; }
+.search-kbd {
+  position: absolute; right: 9px; top: 8px; font-size: 9px; color: var(--dim);
+  border: 1px solid var(--line); border-radius: 3px; padding: 1px 5px; pointer-events: none;
 }
-.mic-dot { width: 5px; height: 5px; border-radius: 50%; background: #333; }
-.mic-chip.live .mic-dot { background: #4f8; animation: blink 2s ease-in-out infinite; }
-.mic-chip.live { color: #4f8; }
-.mic-chip.wake .mic-dot { background: #0cf; }
-.mic-chip.wake { color: #0cf; }
-
-/* Center badge */
-.badge { display: flex; flex-direction: column; align-items: center; gap: 4px; }
-.live-pill {
-  display: flex; align-items: center; gap: 7px;
-  border: 1px solid #900;
-  background: rgba(50,0,0,0.8);
-  padding: 4px 14px;
-  font-size: 10px; font-weight: bold; color: #f44;
-  letter-spacing: 1.5px;
-  border-radius: 2px;
+.results {
+  position: absolute; top: 40px; left: 0; right: 0; max-height: 52vh; overflow-y: auto;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 3px;
+  backdrop-filter: blur(10px); display: none; z-index: 5;
 }
-.live-dot { width: 6px; height: 6px; background: #f00; border-radius: 50%; animation: blink 1s ease-in-out infinite; }
-@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.1} }
-
-.live-stats {
-  display: flex; gap: 18px;
-  font-size: 7.5px; letter-spacing: 1px; color: #333;
+.results.on { display: block; }
+.res {
+  padding: 7px 11px; border-bottom: 1px solid rgba(0,200,255,.08);
+  cursor: pointer; display: flex; gap: 9px; align-items: baseline;
 }
-.ls-v { color: #0cf; font-variant-numeric: tabular-nums; }
+.res:last-child { border-bottom: 0; }
+.res:hover, .res.sel { background: rgba(0,210,255,.10); }
+.res-kind { font-size: 8px; letter-spacing: 1px; color: #05121a; background: var(--cy); padding: 1px 4px; border-radius: 2px; flex: 0 0 auto; }
+.res-kind.tool { background: #ff8866; }
+.res-name { color: #eaf6ff; font-size: 12px; }
+.res-ctx { color: var(--dim); font-size: 10px; margin-left: auto; flex: 0 0 auto; }
+.res-empty { padding: 11px; color: var(--dim); font-size: 11px; }
 
-/* Right metrics */
-.metrics { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; font-size: 7.5px; letter-spacing: 1px; }
-.m-row { display: flex; gap: 10px; }
-.m-lbl { color: #333; }
-.m-val { min-width: 36px; text-align: right; }
-.m-val.ok   { color: #4f8; }
-.m-val.warn { color: #f84; }
-.m-val.info { color: #4af; }
+.toolbtns { display: flex; gap: 6px; margin-left: auto; }
+.tbtn {
+  background: var(--panel); border: 1px solid var(--line); color: var(--dim);
+  font: inherit; font-size: 9px; letter-spacing: 1.5px; padding: 7px 9px;
+  border-radius: 3px; cursor: pointer; backdrop-filter: blur(8px);
+}
+.tbtn:hover { color: var(--cy); border-color: rgba(0,210,255,.5); }
+.tbtn.on { color: #05121a; background: var(--cy); border-color: var(--cy); }
 
-/* ── Bottom bar ──────────────────────────────────── */
+/* ── Side panels ────────────────────────────────── */
+.panel {
+  position: absolute; background: var(--panel); border: 1px solid var(--line);
+  border-radius: 3px; backdrop-filter: blur(10px); padding: 12px;
+  overflow-y: auto; overscroll-behavior: contain;
+}
+.p-left  { top: 92px; left: 22px;  width: 250px; max-height: calc(100vh - 190px); }
+.p-right { top: 92px; right: 22px; width: 320px; max-height: calc(100vh - 190px); }
+
+.p-title {
+  font-size: 9px; letter-spacing: 2.5px; color: var(--cy);
+  border-bottom: 1px solid var(--line); padding-bottom: 6px; margin-bottom: 9px;
+}
+.p-title .muted { color: var(--dim); float: right; letter-spacing: 1px; }
+
+.metric { display: flex; justify-content: space-between; font-size: 11px; padding: 3px 0; }
+.metric .k { color: var(--dim); }
+.metric .v { color: #fff; font-weight: 700; }
+
+.legend { margin-top: 12px; }
+.leg { display: flex; align-items: center; gap: 7px; font-size: 10px; padding: 3px 0; cursor: pointer; }
+.leg:hover .leg-name { color: #fff; }
+.leg-dot { width: 8px; height: 8px; border-radius: 50%; flex: 0 0 auto; }
+.leg-name { color: #b9cddb; }
+.leg-n { margin-left: auto; color: var(--dim); }
+
+.road { margin-top: 12px; }
+.road-item { display: flex; gap: 7px; align-items: flex-start; font-size: 10.5px; padding: 4px 0; cursor: pointer; line-height: 1.35; }
+.road-box {
+  width: 12px; height: 12px; border: 1px solid var(--line); border-radius: 2px;
+  flex: 0 0 auto; margin-top: 1px; display: grid; place-items: center;
+  font-size: 9px; color: #05121a;
+}
+.road-item.done .road-box { background: #00ff9c; border-color: #00ff9c; }
+.road-item.done .road-label { color: var(--dim); text-decoration: line-through; }
+.road-label { color: #cadbe7; }
+
+/* Detail panel */
+.d-empty { color: var(--dim); font-size: 11px; line-height: 1.6; }
+.d-kind { font-size: 8px; letter-spacing: 2px; color: #05121a; padding: 2px 6px; border-radius: 2px; display: inline-block; }
+.d-name { font-size: 16px; font-weight: 800; color: #fff; margin: 8px 0 6px; word-break: break-word; }
+.d-desc { font-size: 11.5px; color: #b9cddb; line-height: 1.55; }
+.d-sec { font-size: 9px; letter-spacing: 2px; color: var(--cy); margin: 12px 0 5px; }
+.d-list { list-style: none; }
+.d-list li { font-size: 11px; color: #cadbe7; padding: 2.5px 0; line-height: 1.4; }
+.d-list a { color: var(--cy); text-decoration: none; word-break: break-all; }
+.d-list a:hover { text-decoration: underline; }
+.chiplink {
+  display: inline-block; font-size: 10px; color: #cadbe7; border: 1px solid var(--line);
+  border-radius: 2px; padding: 2px 7px; margin: 2px 3px 2px 0; cursor: pointer;
+}
+.chiplink:hover { color: #fff; border-color: rgba(0,210,255,.6); }
+.d-meta { font-size: 10px; color: var(--dim); margin-top: 10px; word-break: break-all; }
+code { background: rgba(0,210,255,.10); padding: 1px 4px; border-radius: 2px; color: #9fe6ff; }
+
+/* Capture */
+.cap-input {
+  width: 100%; background: rgba(0,0,0,.5); border: 1px solid var(--line); color: #eaf6ff;
+  font: inherit; font-size: 11px; padding: 7px; border-radius: 3px; resize: vertical;
+  min-height: 52px; outline: none;
+}
+.cap-input:focus { border-color: rgba(0,210,255,.6); }
+.cap-row { display: flex; gap: 6px; margin-top: 6px; }
+.cap-note { font-size: 10.5px; color: #cadbe7; border-left: 2px solid var(--line); padding: 4px 0 4px 7px; margin-top: 6px; line-height: 1.4; position: relative; }
+.cap-note time { display: block; color: var(--dim); font-size: 9px; margin-top: 2px; }
+.cap-del { position: absolute; right: 0; top: 3px; color: var(--dim); cursor: pointer; font-size: 12px; padding: 0 3px; }
+.cap-del:hover { color: #ff6644; }
+
+/* ── Bottom bar ─────────────────────────────────── */
 .bottombar {
-  position: absolute;
-  bottom: 16px; left: 56px; right: 56px;
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 12px;
+  position: absolute; bottom: 16px; left: 50px; right: 50px;
+  display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
 }
+.status { font-size: 9.5px; letter-spacing: 1.5px; color: var(--dim); }
+.status .on { color: #00ff9c; }
+.status .warn { color: #ffb020; }
+.hint { font-size: 9px; letter-spacing: 1.2px; color: #3d5162; margin-left: auto; text-align: right; }
 
-.sections { display: flex; gap: 5px; flex-wrap: wrap; max-width: 320px; }
-.chip {
-  font-size: 7px; letter-spacing: 1px; color: #2a2a2a;
-  border: 1px solid #1a1a1a;
-  padding: 2px 6px; border-radius: 2px;
-  transition: all 0.4s;
+.toast {
+  position: fixed; left: 50%; bottom: 70px; transform: translateX(-50%);
+  background: rgba(0,210,255,.14); border: 1px solid rgba(0,210,255,.5);
+  color: #d9f4ff; font-size: 11px; padding: 8px 14px; border-radius: 3px;
+  z-index: 40; opacity: 0; transition: opacity .25s; pointer-events: none;
 }
-.chip.active { color: #0cf; border-color: rgba(0,200,255,0.4); background: rgba(0,200,255,0.05); text-shadow: 0 0 8px rgba(0,200,255,0.5); }
+.toast.on { opacity: 1; }
 
-.terminal {
-  display: flex; align-items: center; gap: 8px;
-  font-size: 8px; letter-spacing: 1px;
-  flex: 1; justify-content: center;
+.banner {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 50;
+  background: #3a1010; border-bottom: 1px solid #ff5544; color: #ffd9d4;
+  font-size: 11.5px; padding: 9px 14px; line-height: 1.5;
 }
-.t-prompt { color: #4f8; }
-.t-text { color: #3a3a3a; white-space: nowrap; overflow: hidden; border-right: 1px solid #3a3a3a; animation: tcursor 1.2s step-end infinite; }
-.t-text.awake { color: #0cf; text-shadow: 0 0 10px rgba(0,200,255,0.6); }
-@keyframes tcursor { 0%,100%{border-color:#3a3a3a} 50%{border-color:transparent} }
+.banner code { background: rgba(255,255,255,.12); color: #fff; }
 
-/* waveform bars shown while awake */
-.wave { display: flex; align-items: flex-end; gap: 2px; height: 12px; opacity: 0; transition: opacity 0.3s; }
-.wave.on { opacity: 1; }
-.wave span { width: 2px; background: #0cf; height: 3px; }
-.wave.on span { animation: wbar 0.5s ease-in-out infinite alternate; }
-.wave span:nth-child(2) { animation-delay: 0.1s; }
-.wave span:nth-child(3) { animation-delay: 0.2s; }
-.wave span:nth-child(4) { animation-delay: 0.05s; }
-.wave span:nth-child(5) { animation-delay: 0.15s; }
-@keyframes wbar { from{height:2px} to{height:12px} }
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-thumb { background: rgba(0,200,255,.22); border-radius: 3px; }
+::-webkit-scrollbar-track { background: transparent; }
 
-.statusline { font-size: 7.5px; color: #2a2a2a; letter-spacing: 1px; text-align: right; white-space: nowrap; }
-.statusline .on { color: #4f8; }
-.statusline .cnt { color: #4af; }
-
-/* sound toggle */
-.snd-btn {
-  pointer-events: auto;
-  cursor: pointer;
-  font-size: 7.5px; letter-spacing: 1px;
-  color: #444; border: 1px solid #222;
-  padding: 3px 8px; border-radius: 2px;
-  background: rgba(0,0,0,0.6);
-  margin-bottom: 5px;
-  display: inline-block;
-}
-.snd-btn.on { color: #4f8; border-color: rgba(0,255,140,0.35); }
-
-/* ── Left sidebar ────────────────────────────────── */
-.left-sidebar {
-  position: absolute;
-  left: 14px; top: 50%; transform: translateY(-50%);
-  display: flex; flex-direction: column; gap: 10px;
-  font-size: 7.5px; letter-spacing: 1px;
-}
-.sb-block { border-left: 1px solid #161616; padding-left: 7px; }
-.sb-label { color: #222; margin-bottom: 2px; }
-.sb-val { font-size: 13px; font-weight: bold; font-variant-numeric: tabular-nums; }
-
-/* ── Right activity graph ────────────────────────── */
-.activity-graph {
-  position: absolute;
-  right: 14px; top: 50%; transform: translateY(-50%);
-  width: 10px; height: 180px;
-  display: flex; flex-direction: column; gap: 2px;
-}
-.act-seg { flex: 1; background: rgba(0,200,100,0.15); border-radius: 1px; transition: background 0.3s; }
-.act-seg.on { background: rgba(0,200,100,0.6); }
-
-/* ── Brain region labels (3D-tracked) ────────────── */
-.region {
-  position: absolute;
-  transform: translate(-50%, -50%);
-  border: 1px solid;
-  background: rgba(0,0,0,0.78);
-  padding: 4px 8px;
-  min-width: 118px;
-  pointer-events: auto;
-  cursor: pointer;
-  will-change: transform, opacity;
-  transition: border-color 0.3s;
-}
-.region.focused { box-shadow: 0 0 18px rgba(0,200,255,0.35); }
-.r-name { font-weight: bold; font-size: 10px; letter-spacing: 1px; margin-bottom: 2px; white-space: nowrap; }
-.r-stat { font-size: 7.5px; color: #666; white-space: nowrap; }
-.r-bar-wrap { margin-top: 4px; height: 2px; background: rgba(255,255,255,0.07); border-radius: 1px; overflow: hidden; }
-.r-bar-fill { height: 100%; border-radius: 1px; animation: rpulse 2.4s ease-in-out infinite; }
-@keyframes rpulse { 0%,100%{opacity:0.9} 50%{opacity:0.35} }
-
-/* ── Agent cards ─────────────────────────────────── */
-.agent-card {
-  position: absolute;
-  border: 1px solid rgba(60,160,255,0.35);
-  background: rgba(0,5,15,0.9);
-  padding: 8px 10px;
-  min-width: 170px;
-  transition: opacity 0.6s;
-}
-.a-id { font-size: 7.5px; font-weight: bold; letter-spacing: 1.5px; color: #4af; margin-bottom: 3px; }
-.a-task { font-size: 8.5px; color: #bbb; margin-bottom: 6px; line-height: 1.35; }
-.a-prog-wrap { height: 2px; background: rgba(255,255,255,0.07); border-radius: 1px; overflow: hidden; margin-bottom: 4px; }
-.a-prog-fill { height: 100%; background: linear-gradient(90deg, #0af, #0ff); border-radius: 1px; width: 0%; transition: width 1.2s ease; }
-.a-status { font-size: 7.5px; }
-.a-status.running { color: #ff4; animation: flicker 1.8s ease-in-out infinite; }
-.a-status.complete { color: #4f8; }
-@keyframes flicker { 0%,100%{opacity:1} 50%{opacity:0.3} }
-
-/* ── Info panels ─────────────────────────────────── */
-.info-panel {
-  position: absolute;
-  border: 1px solid;
-  background: rgba(4,2,0,0.92);
-  padding: 11px 14px;
-  max-width: 350px;
-  transition: opacity 0.6s;
-}
-.i-title { font-size: 8.5px; font-weight: bold; letter-spacing: 1px; margin-bottom: 8px; padding-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,0.07); }
-.i-line { font-size: 7.5px; color: #999; line-height: 1.6; padding-left: 12px; position: relative; margin-bottom: 3px; }
-.i-line::before { content: '$'; position: absolute; left: 0; }
-
-/* ── Wake ring ───────────────────────────────────── */
-.wake-ring {
-  position: absolute;
-  top: 50%; left: 50%;
-  width: 120px; height: 120px;
-  margin: -60px 0 0 -60px;
-  border: 2px solid rgba(0,200,255,0.8);
-  border-radius: 50%;
-  opacity: 0;
-  pointer-events: none;
-}
-.wake-ring.fire { animation: ring 1.2s ease-out; }
-@keyframes ring {
-  0%   { opacity: 0.9; transform: scale(0.4); }
-  100% { opacity: 0;   transform: scale(3.2); }
-}
-
-/* ── Hint line ───────────────────────────────────── */
-.hint {
-  position: absolute;
-  bottom: 44px; left: 50%; transform: translateX(-50%);
-  font-size: 7px; letter-spacing: 1.5px; color: #222;
-  white-space: nowrap;
-}
-
-/* ── Responsive: narrow screens ─────────────────── */
-@media (max-width: 760px) {
-  .agent-card { min-width: 120px; padding: 5px 7px; }
-  .a-task { font-size: 7.5px; }
-  .region { min-width: 90px; padding: 3px 6px; }
-  .r-name { font-size: 8px; }
-  .r-stat { font-size: 6.5px; }
-  .info-panel { max-width: 82vw; }
-  .left-sidebar, .activity-graph, .metrics { display: none; }
-  .topbar, .bottombar { left: 16px; right: 16px; }
-  .sections { display: none; }
-  .terminal { justify-content: flex-start; }
-  .t-text { max-width: 55vw; text-overflow: ellipsis; }
+/* ── Narrow screens: panels become toggled sheets ── */
+@media (max-width: 900px) {
+  .topbar { left: 14px; right: 14px; top: 12px; }
+  .bottombar { left: 14px; right: 14px; bottom: 12px; }
+  .corner { display: none; }
+  .p-left, .p-right {
+    top: auto; bottom: 56px; left: 14px; right: 14px; width: auto;
+    max-height: 46vh; display: none;
+  }
+  .p-left.open, .p-right.open { display: block; }
   .hint { display: none; }
-}
-
-/* ── Word flash ──────────────────────────────────── */
-.word-flash {
-  position: absolute;
-  bottom: 100px; left: 50%; transform: translateX(-50%);
-  font-size: clamp(38px, 6.5vw, 68px);
-  font-weight: 900;
-  letter-spacing: 6px;
-  color: #fff;
-  text-shadow: 0 0 30px rgba(255,255,255,0.35), 0 0 70px rgba(80,100,255,0.2);
-  opacity: 0;
-  transition: opacity 0.35s;
-  white-space: nowrap;
 }
 </style>
 </head>
 <body>
-<canvas id="c"></canvas>
 
-<div class="hud" id="hud">
+<canvas id="c" aria-label="Knowledge graph" role="img"></canvas>
 
-  <div class="corner c-tl"></div>
-  <div class="corner c-tr"></div>
-  <div class="corner c-bl"></div>
-  <div class="corner c-br"></div>
+<div class="hud">
+  <div class="corner c-tl"></div><div class="corner c-tr"></div>
+  <div class="corner c-bl"></div><div class="corner c-br"></div>
   <div class="scanline"></div>
-  <div class="wake-ring" id="wake-ring"></div>
 
-  <!-- ── Top bar ── -->
   <div class="topbar">
     <div class="brand">
       <div class="brand-name">Z.E.R.O.</div>
-      <div class="brand-sub">NEUROLIKE BRAIN · CONNECTED · AI SECOND BRAIN</div>
-      <div class="mic-chip" id="mic-chip"><div class="mic-dot"></div><span id="mic-txt">MIC OFFLINE · PRESS SPACE TO WAKE</span></div>
+      <div class="brand-sub">SECOND BRAIN · KNOWLEDGE GRAPH</div>
     </div>
 
-    <div class="badge">
-      <div class="live-pill"><div class="live-dot"></div><span id="live-txt">LIVE 01 / 07</span></div>
-      <div class="live-stats">
-        <span>NEURONS <span class="ls-v" id="neuron-count">1,847</span></span>
-        <span>FIRING <span class="ls-v" id="fire-rate">0.8k/s</span></span>
-        <span>CONNECTIONS <span class="ls-v" id="conn-count">312</span></span>
+    <div class="searchwrap">
+      <input id="q" class="searchbox" type="search" autocomplete="off" spellcheck="false"
+             placeholder="Search skills, tools, categories…" aria-label="Search the second brain">
+      <span class="search-kbd">/</span>
+      <div id="results" class="results" role="listbox"></div>
+    </div>
+
+    <div class="toolbtns">
+      <button class="tbtn" id="btn-left"  type="button" title="System panel">SYS</button>
+      <button class="tbtn" id="btn-right" type="button" title="Detail panel">INFO</button>
+      <button class="tbtn" id="btn-mic"   type="button" title="Voice search">MIC</button>
+      <button class="tbtn" id="btn-reset" type="button" title="Reset the camera">RESET</button>
+    </div>
+  </div>
+
+  <!-- ── Left: system + legend + roadmap ── -->
+  <aside class="panel p-left" id="p-left">
+    <div class="p-title">SYSTEM <span class="muted" id="sys-uptime">00:00:00</span></div>
+    <div class="metric"><span class="k">skills</span><span class="v" id="m-skills">–</span></div>
+    <div class="metric"><span class="k">tools</span><span class="v" id="m-tools">–</span></div>
+    <div class="metric"><span class="k">categories</span><span class="v" id="m-cats">–</span></div>
+    <div class="metric"><span class="k">graph nodes</span><span class="v" id="m-nodes">–</span></div>
+    <div class="metric"><span class="k">graph links</span><span class="v" id="m-edges">–</span></div>
+
+    <div class="legend">
+      <div class="p-title" style="margin-top:14px">PILLARS <span class="muted">click to focus</span></div>
+      <div id="legend"></div>
+    </div>
+
+    <div class="road">
+      <div class="p-title" style="margin-top:14px">ROADMAP <span class="muted" id="road-count"></span></div>
+      <div id="roadmap"></div>
+    </div>
+  </aside>
+
+  <!-- ── Right: node detail + capture inbox ── -->
+  <aside class="panel p-right" id="p-right">
+    <div class="p-title">DETAIL</div>
+    <div id="detail">
+      <div class="d-empty">
+        Click any node in the graph, or search above.<br><br>
+        Pillars sit at the centre of each cluster. Skills orbit their pillar; tool
+        categories fan out into their subcategories.
       </div>
     </div>
 
-    <div class="metrics">
-      <div class="m-row"><span class="m-lbl">CPU</span><span class="m-val ok" id="m-cpu">2%</span></div>
-      <div class="m-row"><span class="m-lbl">MEM</span><span class="m-val warn" id="m-mem">6.1 GB</span></div>
-      <div class="m-row"><span class="m-lbl">OPS</span><span class="m-val info" id="m-ops">847/s</span></div>
-      <div class="m-row"><span class="m-lbl">MODEL</span><span class="m-val info">LOCAL · FREE</span></div>
+    <div class="p-title" style="margin-top:16px">CAPTURE <span class="muted" id="cap-count"></span></div>
+    <textarea id="cap-input" class="cap-input" placeholder="Capture a thought — stored locally, exports as Markdown for the vault…"></textarea>
+    <div class="cap-row">
+      <button class="tbtn" id="cap-add"    type="button">ADD</button>
+      <button class="tbtn" id="cap-export" type="button">EXPORT .MD</button>
+      <button class="tbtn" id="cap-clear"  type="button">CLEAR</button>
     </div>
-  </div>
+    <div id="cap-list"></div>
+  </aside>
 
-  <!-- ── Left sidebar ── -->
-  <div class="left-sidebar">
-    <div class="sb-block">
-      <div class="sb-label">AGENTS</div>
-      <div class="sb-val" id="sb-agents" style="color:#4af;">6</div>
-    </div>
-    <div class="sb-block">
-      <div class="sb-label">TASKS (ALL-TIME)</div>
-      <div class="sb-val" id="sb-tasks" style="color:#4f8;">0</div>
-    </div>
-    <div class="sb-block">
-      <div class="sb-label">UPTIME (TOTAL)</div>
-      <div class="sb-val" id="sb-uptime" style="color:#f84; font-size:10px;">00:00:00</div>
-    </div>
-  </div>
-
-  <!-- ── Right activity graph ── -->
-  <div class="activity-graph" id="act-graph">
-    <div class="act-seg"></div><div class="act-seg"></div><div class="act-seg"></div>
-    <div class="act-seg"></div><div class="act-seg"></div><div class="act-seg"></div>
-    <div class="act-seg"></div><div class="act-seg"></div><div class="act-seg"></div>
-    <div class="act-seg"></div><div class="act-seg"></div><div class="act-seg"></div>
-    <div class="act-seg"></div><div class="act-seg"></div><div class="act-seg"></div>
-    <div class="act-seg"></div>
-  </div>
-
-  <!-- Region labels are generated by JS and tracked to 3D positions -->
-  <div id="region-labels"></div>
-
-  <!-- ── Agent Cards ── -->
-  <div class="agent-card" style="top:30%;left:5%;">
-    <div class="a-id">AGENT-01</div>
-    <div class="a-task">Qualifying new GHL lead</div>
-    <div class="a-prog-wrap"><div class="a-prog-fill" id="ap1"></div></div>
-    <div class="a-status running" id="as1">running...</div>
-  </div>
-  <div class="agent-card" style="top:30%;right:5%;">
-    <div class="a-id">AGENT-02</div>
-    <div class="a-task">Drafting outreach batch</div>
-    <div class="a-prog-wrap"><div class="a-prog-fill" id="ap2"></div></div>
-    <div class="a-status running" id="as2">running...</div>
-  </div>
-  <div class="agent-card" style="top:47%;left:5%;">
-    <div class="a-id">AGENT-03</div>
-    <div class="a-task">Scanning AI tool releases</div>
-    <div class="a-prog-wrap"><div class="a-prog-fill" id="ap3"></div></div>
-    <div class="a-status running" id="as3">running...</div>
-  </div>
-  <div class="agent-card" style="top:47%;right:5%;">
-    <div class="a-id">AGENT-04</div>
-    <div class="a-task">Rendering ad creative</div>
-    <div class="a-prog-wrap"><div class="a-prog-fill" id="ap4"></div></div>
-    <div class="a-status running" id="as4">running...</div>
-  </div>
-  <div class="agent-card" style="top:64%;left:5%;">
-    <div class="a-id">AGENT-05</div>
-    <div class="a-task">Auditing client pipeline</div>
-    <div class="a-prog-wrap"><div class="a-prog-fill" id="ap5"></div></div>
-    <div class="a-status running" id="as5">running...</div>
-  </div>
-  <div class="agent-card" style="top:64%;right:5%;">
-    <div class="a-id">AGENT-06</div>
-    <div class="a-task">Writing weekly rollup</div>
-    <div class="a-prog-wrap"><div class="a-prog-fill" id="ap6"></div></div>
-    <div class="a-status running" id="as6">running...</div>
-  </div>
-
-  <!-- ── Info Panels ── -->
-  <div class="info-panel" id="info-you" style="top:18%;left:5%;opacity:0;border-color:rgba(255,120,40,0.4);">
-    <div class="i-title" style="color:#f84;">WHAT I KNOW ABOUT YOU</div>
-    <div class="i-line">Founder runs Agent Core AI (service agency) and AI Monopoly Club (community).</div>
-    <div class="i-line">Hard rule: research and execute autonomously; never bounce back menus for things that can be looked up.</div>
-  </div>
-
-  <div class="info-panel" id="info-biz" style="top:42%;left:5%;opacity:0;border-color:rgba(255,70,40,0.4);max-width:360px;">
-    <div class="i-title" style="color:#f64;">WHAT I KNOW ABOUT THE BUSINESS</div>
-    <div class="i-line">Stack is Python-first, Local-first (127.0.0.1), no Node.js. Default to the free local model.</div>
-    <div class="i-line">Agent Core AI's core product is high-converting picture/video ad hooks that drive leads.</div>
-    <div class="i-line">CRM is GoHighLevel (GHL). Runtime: ops-center, NeuronLikeai Brain (Z.E.R.O.).</div>
-    <div class="i-line">8 sections: sales, accounts, creative, engineering, research, ops, finance, community.</div>
-    <div class="i-line">Safety model: full autonomy on free local model; real-money actions gated by hard approval.</div>
-    <div class="i-line">Tools: Claude Code, Hermes, multi-agent shared context + memory.</div>
-  </div>
-
-  <!-- ── Bottom bar ── -->
   <div class="bottombar">
-    <div class="sections">
-      <div class="chip" id="s-sales">SALES</div>
-      <div class="chip" id="s-accts">ACCTS</div>
-      <div class="chip" id="s-crea">CREATIVE</div>
-      <div class="chip" id="s-eng">ENGRG</div>
-      <div class="chip" id="s-res">RESEARCH</div>
-      <div class="chip" id="s-ops">OPS</div>
-      <div class="chip" id="s-fin">FINANCE</div>
-      <div class="chip" id="s-comm">COMMUNITY</div>
+    <div class="status">
+      <span id="st-mode" class="on">● GRAPH LIVE</span> ·
+      <span id="st-sel">NO SELECTION</span> ·
+      <span id="st-mic">MIC OFF</span>
     </div>
-
-    <div class="terminal">
-      <span class="t-prompt">ZERO &gt;</span>
-      <span class="t-text" id="t-text">LISTENING FOR "HEY ZERO"...</span>
-      <div class="wave" id="wave"><span></span><span></span><span></span><span></span><span></span></div>
-    </div>
-
-    <div style="text-align:right;">
-      <div class="snd-btn" id="snd-btn">SOUND: OFF</div>
-      <div class="statusline">
-        <span class="on">● CONNECTED</span><br>
-        <span class="cnt" id="agent-active">6 AGENTS ACTIVE</span><br>
-        <span id="tasks-done">0 TASKS DONE</span>
-      </div>
-    </div>
+    <div class="hint">DRAG TO ORBIT · SCROLL TO ZOOM · CLICK A NODE · PRESS / TO SEARCH · ESC TO CLEAR</div>
   </div>
-
-  <div class="hint">DRAG TO ORBIT · PINCH OR SCROLL TO ZOOM · TAP A REGION TO FOCUS · SAY "HEY ZERO" · HOLD SCREEN OR PRESS SPACE TO WAKE</div>
-
-  <!-- ── Word Flash ── -->
-  <div class="word-flash" id="word-flash"></div>
-
 </div>
 
+<div class="toast" id="toast"></div>
+
+<script src="brain-data.js"></script>
 <script>
 'use strict';
 
-// ════════════════════════════════════════════════════════
-//  3D Neural Brain Engine (vanilla, no dependencies)
-// ════════════════════════════════════════════════════════
-const canvas = document.getElementById('c');
-const ctx = canvas.getContext('2d');
-const DPR = Math.min(window.devicePixelRatio || 1, 2);
-let W, H, t = 0;
+// ════════════════════════════════════════════════════════════════
+//  Z.E.R.O. — a real knowledge graph over brain-data.js
+//  Data is generated by scripts/gen_secondbrain.py from the repo:
+//  .claude/skills/*/SKILL.md + README.md → pillars, skills, tools.
+// ════════════════════════════════════════════════════════════════
+const DATA = window.__BRAIN__ || null;
 
-// Regions placed in unit 3D space (roughly anatomical)
-const REGIONS = [
-  { id:'prefrontal', name:'PREFRONTAL',    stat:'140 neurons · firing 0.8k', c:[ 0.05,-0.62, 0.55], col:'#6060ff', n:20, fill:80 },
-  { id:'motor',      name:'MOTOR CORTEX',  stat:'190 neurons · firing 0.8k', c:[-0.15,-0.70, 0.05], col:'#ff4444', n:22, fill:80 },
-  { id:'assoc',      name:'ASSOCIATION',   stat:'260 neurons · firing 0.5k', c:[ 0.10,-0.15, 0.10], col:'#cc44ff', n:20, fill:50 },
-  { id:'concept',    name:'CONCEPT LAYER', stat:'160 neurons · firing 0.8k', c:[ 0.55,-0.35, 0.35], col:'#00ccff', n:16, fill:80 },
-  { id:'sensory',    name:'SENSORY CORTEX',stat:'300 neurons · firing 0.6k', c:[-0.68,-0.10, 0.15], col:'#00cc66', n:22, fill:60 },
-  { id:'predictive', name:'PREDICTIVE',    stat:'180 neurons · firing 0.6k', c:[ 0.68,-0.05,-0.15], col:'#ff8800', n:17, fill:60 },
-  { id:'feature',    name:'FEATURE LAYER', stat:'100 neurons · firing 0.8k', c:[-0.10, 0.20,-0.40], col:'#dddd44', n:14, fill:80 },
-  { id:'language',   name:'LANGUAGE',      stat:'170 neurons · firing 0.6k', c:[-0.55, 0.35, 0.30], col:'#00ff88', n:16, fill:60 },
-  { id:'hippo',      name:'HIPPOCAMPUS',   stat:'160 neurons · firing 0.8k', c:[ 0.45, 0.42, 0.30], col:'#00cccc', n:16, fill:80 },
-  { id:'brainstem',  name:'BRAINSTEM',     stat:'120 neurons · firing 0.8k', c:[ 0.00, 0.72, 0.00], col:'#ff5500', n:12, fill:80 },
-  { id:'cerebellum', name:'CEREBELLUM',    stat:'PLANNED',                   c:[ 0.40, 0.62,-0.35], col:'#aa44ff', n:10, fill:0  },
-  { id:'reflex',     name:'REFLEX ARC',    stat:'PLANNED',                   c:[-0.45, 0.62,-0.30], col:'#bbbbbb', n:9,  fill:0  },
-];
+if (!DATA) {
+  const b = document.createElement('div');
+  b.className = 'banner';
+  b.innerHTML = 'Z.E.R.O. could not load <code>brain-data.js</code>. ' +
+    'Regenerate it with <code>python3 scripts/gen_secondbrain.py</code>, ' +
+    'then reload this page.';
+  document.body.appendChild(b);
+}
 
-const nodes = [];
-const edges = [];   // precomputed pairs [i, j]
-let pulses = [];
+const $ = (id) => document.getElementById(id);
+const nodes = DATA ? DATA.nodes.map((n) => Object.assign({}, n)) : [];
+const byId = new Map(nodes.map((n) => [n.id, n]));
+const edges = DATA
+  ? DATA.edges.filter((e) => byId.has(e.s) && byId.has(e.t))
+  : [];
 
-REGIONS.forEach((reg, ri) => {
-  reg.idx = [];
-  for (let i = 0; i < reg.n; i++) {
-    // spherical jitter around region center
-    const th = Math.random() * Math.PI * 2;
-    const ph = Math.acos(2 * Math.random() - 1);
-    const rr = Math.cbrt(Math.random()) * 0.22;
-    reg.idx.push(nodes.length);
-    nodes.push({
-      ri,
-      bx: reg.c[0] + rr * Math.sin(ph) * Math.cos(th),
-      by: reg.c[1] + rr * Math.sin(ph) * Math.sin(th),
-      bz: reg.c[2] + rr * Math.cos(ph),
-      col: reg.col,
-      size: Math.random() * 1.6 + 0.9,
-      phase: Math.random() * Math.PI * 2,
-      spd: Math.random() * 0.35 + 0.12,
-      drift: Math.random() * 0.03 + 0.012,
-      firing: false,
-      fireT: Math.random() * 5,
-      // scratch: projected coords, filled each frame
-      sx: 0, sy: 0, ss: 0, sz: 0,
-    });
+// Adjacency, used for layout, highlighting, and the "neighbours" list.
+const adj = new Map(nodes.map((n) => [n.id, []]));
+for (const e of edges) { adj.get(e.s).push(e.t); adj.get(e.t).push(e.s); }
+
+// ── Layout: deterministic clustered sphere ──────────────────────
+// Pillars land on a Fibonacci sphere; each node's children form a smaller
+// sphere around their parent. No physics, no randomness — same every load,
+// which keeps the map memorable instead of rearranging on every visit.
+const GOLDEN = Math.PI * (3 - Math.sqrt(5));
+
+function spherePoints(count, radius, seed) {
+  const out = [];
+  for (let i = 0; i < count; i++) {
+    const y = count === 1 ? 0 : 1 - (i / (count - 1)) * 2;
+    const r = Math.sqrt(Math.max(0, 1 - y * y));
+    const th = i * GOLDEN + seed;
+    out.push([Math.cos(th) * r * radius, y * radius, Math.sin(th) * r * radius]);
   }
-});
+  return out;
+}
 
-// Precompute edges once: 3 nearest neighbors in-region + sparse cross-region links
-(function buildEdges() {
-  const d2 = (a, b) => {
-    const dx = a.bx-b.bx, dy = a.by-b.by, dz = a.bz-b.bz;
-    return dx*dx + dy*dy + dz*dz;
-  };
-  const seen = new Set();
-  const addEdge = (i, j) => {
-    const key = i < j ? i + '-' + j : j + '-' + i;
-    if (!seen.has(key)) { seen.add(key); edges.push([i, j]); }
-  };
-  REGIONS.forEach(reg => {
-    reg.idx.forEach(i => {
-      const dists = reg.idx.filter(j => j !== i)
-        .map(j => [j, d2(nodes[i], nodes[j])])
-        .sort((a, b) => a[1] - b[1]);
-      for (let k = 0; k < Math.min(3, dists.length); k++) addEdge(i, dists[k][0]);
-    });
-  });
-  // cross-region: link each region to its 3 nearest region-neighbors with 3 edges each
-  for (let a = 0; a < REGIONS.length; a++) {
-    const near = REGIONS.map((r, b) => [b,
-        (r.c[0]-REGIONS[a].c[0])**2 + (r.c[1]-REGIONS[a].c[1])**2 + (r.c[2]-REGIONS[a].c[2])**2])
-      .filter(x => x[0] !== a)
-      .sort((x, y) => x[1] - y[1])
-      .slice(0, 3);
-    near.forEach(([b]) => {
-      for (let k = 0; k < 3; k++) {
-        addEdge(
-          REGIONS[a].idx[Math.floor(Math.random() * REGIONS[a].idx.length)],
-          REGIONS[b].idx[Math.floor(Math.random() * REGIONS[b].idx.length)]
-        );
-      }
-    });
+(function layout() {
+  const pillars = nodes.filter((n) => n.kind === 'pillar');
+  const centres = spherePoints(pillars.length, 0.62, 0.7);
+  pillars.forEach((p, i) => { p.p = centres[i]; });
+
+  // Children are laid out breadth-first from the pillars outwards.
+  const placed = new Set(pillars.map((p) => p.id));
+  let frontier = pillars.slice();
+  let radius = 0.30;
+
+  while (frontier.length) {
+    const next = [];
+    for (const parent of frontier) {
+      const kids = adj.get(parent.id)
+        .map((id) => byId.get(id))
+        .filter((n) => n && !placed.has(n.id));
+      if (!kids.length) continue;
+      const offsets = spherePoints(kids.length, radius, parent.p[0] * 9 + parent.p[2] * 4);
+      kids.forEach((kid, i) => {
+        kid.p = [
+          parent.p[0] + offsets[i][0],
+          parent.p[1] + offsets[i][1],
+          parent.p[2] + offsets[i][2],
+        ];
+        placed.add(kid.id);
+        next.push(kid);
+      });
+    }
+    frontier = next;
+    radius *= 0.55;
+  }
+
+  // Anything the graph never reached still needs a position.
+  const strays = nodes.filter((n) => !n.p);
+  spherePoints(strays.length, 1.0, 2.1).forEach((pt, i) => { strays[i].p = pt; });
+
+  for (const n of nodes) {
+    n.sx = 0; n.sy = 0; n.ss = 1; n.sz = 0;
+    n.r = n.kind === 'pillar' ? 6.5 : n.kind === 'category' ? 4.2 : n.kind === 'skill' ? 3.4 : 2.6;
+    n.phase = (n.p[0] + n.p[1] * 2 + n.p[2] * 3) * 4;
   }
 })();
 
-// ── Camera (orbit + zoom + focus) ──
-const cam = {
-  yaw: 0.3, pitch: -0.1, zoom: 1,
-  tYaw: 0.3, tPitch: -0.1, tZoom: 1,
-  auto: true,
-};
-let focusedRegion = null;
+// ── Canvas + camera ─────────────────────────────────────────────
+const canvas = $('c');
+const ctx = canvas.getContext('2d');
+const DPR = Math.min(window.devicePixelRatio || 1, 2);
+let W = 0, H = 0, t = 0;
+
+const cam = { yaw: 0.4, pitch: -0.15, zoom: 1, tYaw: 0.4, tPitch: -0.15, tZoom: 1, auto: true };
+const CAM_HOME = { yaw: 0.4, pitch: -0.15, zoom: 1 };
 
 function project(x, y, z) {
-  // yaw about Y
   const cy = Math.cos(cam.yaw), sy = Math.sin(cam.yaw);
   const x1 = x * cy + z * sy;
   const z1 = -x * sy + z * cy;
-  // pitch about X
   const cp = Math.cos(cam.pitch), sp = Math.sin(cam.pitch);
   const y1 = y * cp - z1 * sp;
   const z2 = y * sp + z1 * cp;
   const persp = 3;
-  const s = persp / (persp - z2 * cam.zoom * 0.9);
-  const R = Math.min(W, H) * 0.34 * cam.zoom;
-  return { x: W/2 + x1 * R * s, y: H/2 + y1 * R * s, s, z: z2 };
+  const s = persp / (persp - z2 * cam.zoom * 0.85);
+  const R = Math.min(W, H) * 0.33 * cam.zoom;
+  return { x: W / 2 + x1 * R * s, y: H / 2 + y1 * R * s, s, z: z2 };
 }
 
 function resize() {
   W = window.innerWidth; H = window.innerHeight;
-  canvas.width = W * DPR; canvas.height = H * DPR;
+  canvas.width = Math.round(W * DPR); canvas.height = Math.round(H * DPR);
   canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
 }
 window.addEventListener('resize', resize);
 resize();
 
-function hex2rgb(h) {
-  return [parseInt(h.slice(1,3),16), parseInt(h.slice(3,5),16), parseInt(h.slice(5,7),16)];
-}
-
-// ── Region labels: HTML elements tracked to 3D anchors ──
-const labelWrap = document.getElementById('region-labels');
-REGIONS.forEach(reg => {
-  const el = document.createElement('div');
-  el.className = 'region';
-  el.style.borderColor = reg.col + '66';
-  el.innerHTML =
-    `<div class="r-name" style="color:${reg.col}">${reg.name}</div>` +
-    `<div class="r-stat">${reg.stat}</div>` +
-    (reg.fill ? `<div class="r-bar-wrap"><div class="r-bar-fill" style="width:${reg.fill}%;background:${reg.col};"></div></div>` : '');
-  el.addEventListener('click', () => focusRegion(reg, el));
-  labelWrap.appendChild(el);
-  reg.el = el;
-});
-
-function focusRegion(reg, el) {
-  document.querySelectorAll('.region.focused').forEach(e => e.classList.remove('focused'));
-  if (focusedRegion === reg) {           // unfocus
-    focusedRegion = null;
-    cam.tZoom = 1; cam.auto = true;
-    return;
+const rgbCache = new Map();
+function rgb(hex) {
+  let v = rgbCache.get(hex);
+  if (!v) {
+    v = [parseInt(hex.slice(1, 3), 16), parseInt(hex.slice(3, 5), 16), parseInt(hex.slice(5, 7), 16)];
+    rgbCache.set(hex, v);
   }
-  focusedRegion = reg;
-  el.classList.add('focused');
-  cam.auto = false;
-  const [x, y, z] = reg.c;
-  cam.tYaw = Math.atan2(x, z);
-  cam.tPitch = Math.atan2(y, Math.hypot(x, z));
-  cam.tZoom = 1.55;
-  blip(660, 0.08);
+  return v;
 }
 
-// ── Interaction: drag orbit, pinch/wheel zoom, hold-to-wake ──
-const pointers = new Map();   // pointerId → {sx, sy, x, y}
-let dragging = false, lastX = 0, lastY = 0, lastPinch = 0, lpTimer = null;
+// ── Selection / hover / search highlight state ──────────────────
+let selected = null;
+let hovered = null;
+let matches = new Set();      // ids matched by the current search
+const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-canvas.addEventListener('contextmenu', e => e.preventDefault());
+function relatedTo(id) {
+  if (!id) return null;
+  const set = new Set(adj.get(id) || []);
+  set.add(id);
+  return set;
+}
 
-canvas.addEventListener('pointerdown', e => {
-  pointers.set(e.pointerId, { sx: e.clientX, sy: e.clientY, x: e.clientX, y: e.clientY });
-  clearTimeout(lpTimer);
+function emphasis(node) {
+  // 1 = full, <1 = dimmed. Search wins over selection.
+  if (matches.size) return matches.has(node.id) ? 1 : 0.12;
+  const near = relatedTo(selected && selected.id);
+  if (near) return near.has(node.id) ? 1 : 0.2;
+  return 1;
+}
+
+// ── Render loop ─────────────────────────────────────────────────
+function frame() {
+  requestAnimationFrame(frame);
+  t += 0.016;
+
+  if (cam.auto && !reduceMotion) cam.tYaw += 0.0013;
+  cam.yaw += (cam.tYaw - cam.yaw) * 0.07;
+  cam.pitch += (cam.tPitch - cam.pitch) * 0.07;
+  cam.zoom += (cam.tZoom - cam.zoom) * 0.07;
+
+  ctx.fillStyle = '#000';
+  ctx.fillRect(0, 0, W, H);
+
+  const glow = ctx.createRadialGradient(W / 2, H / 2, 0, W / 2, H / 2, Math.min(W, H) * 0.5);
+  glow.addColorStop(0, 'rgba(20,40,70,0.5)');
+  glow.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = glow;
+  ctx.fillRect(0, 0, W, H);
+
+  for (const n of nodes) {
+    const wob = reduceMotion ? 0 : Math.sin(t * 0.5 + n.phase) * 0.008;
+    const p = project(n.p[0] + wob, n.p[1] + wob * 0.7, n.p[2] - wob);
+    n.sx = p.x; n.sy = p.y; n.ss = p.s; n.sz = p.z;
+    n.em = emphasis(n);
+  }
+
+  // Edges
+  ctx.lineWidth = 0.7;
+  for (const e of edges) {
+    const a = byId.get(e.s), b = byId.get(e.t);
+    const em = Math.min(a.em, b.em);
+    const depth = (a.sz + b.sz) / 2;
+    const alpha = (0.05 + 0.16 * (depth + 1) / 2) * em;
+    if (alpha < 0.012) continue;
+    const [ar, ag, ab] = rgb(a.color);
+    const [br, bg, bb] = rgb(b.color);
+    const grad = ctx.createLinearGradient(a.sx, a.sy, b.sx, b.sy);
+    grad.addColorStop(0, `rgba(${ar},${ag},${ab},${alpha})`);
+    grad.addColorStop(1, `rgba(${br},${bg},${bb},${alpha})`);
+    ctx.strokeStyle = grad;
+    ctx.beginPath(); ctx.moveTo(a.sx, a.sy); ctx.lineTo(b.sx, b.sy); ctx.stroke();
+  }
+
+  // Nodes, back to front
+  const order = nodes.slice().sort((a, b) => a.sz - b.sz);
+  for (const n of order) {
+    const [r, g, b] = rgb(n.color);
+    const depthFade = 0.4 + 0.6 * (n.sz + 1) / 2;
+    const isActive = n === selected || n === hovered;
+    const alpha = Math.min(1, n.em * depthFade * (isActive ? 1.6 : 1));
+    if (alpha < 0.02) continue;
+    const size = n.r * n.ss * (isActive ? 1.5 : 1);
+    const halo = size * (isActive ? 4 : 2.6);
+
+    const gr = ctx.createRadialGradient(n.sx, n.sy, 0, n.sx, n.sy, halo);
+    gr.addColorStop(0, `rgba(${r},${g},${b},${alpha * 0.5})`);
+    gr.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.beginPath(); ctx.arc(n.sx, n.sy, halo, 0, Math.PI * 2);
+    ctx.fillStyle = gr; ctx.fill();
+
+    ctx.beginPath(); ctx.arc(n.sx, n.sy, size, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(${r},${g},${b},${alpha})`;
+    ctx.fill();
+
+    if (n === selected) {
+      ctx.beginPath(); ctx.arc(n.sx, n.sy, size + 6, 0, Math.PI * 2);
+      ctx.strokeStyle = `rgba(${r},${g},${b},0.85)`;
+      ctx.lineWidth = 1.4; ctx.stroke(); ctx.lineWidth = 0.7;
+    }
+  }
+
+  // Labels: pillars always; others when active, matched, or adjacent to selection.
+  const near = relatedTo(selected && selected.id);
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  for (const n of order) {
+    const show =
+      n.kind === 'pillar' ||
+      n === hovered || n === selected ||
+      matches.has(n.id) ||
+      (near && near.has(n.id));
+    if (!show) continue;
+    const alpha = Math.min(1, n.em * (0.45 + 0.55 * (n.sz + 1) / 2));
+    if (alpha < 0.1) continue;
+    const big = n.kind === 'pillar';
+    ctx.font = `${big ? 700 : 400} ${(big ? 11 : 10) * Math.min(1.3, n.ss)}px ${getComputedStyle(document.body).fontFamily}`;
+    const label = big ? n.label : n.label.toUpperCase();
+    const y = n.sy - n.r * n.ss - 9;
+    ctx.fillStyle = `rgba(0,0,0,${alpha * 0.65})`;
+    ctx.fillText(label, n.sx + 1, y + 1);
+    ctx.fillStyle = big ? `rgba(255,255,255,${alpha})` : `rgba(200,225,240,${alpha})`;
+    ctx.fillText(label, n.sx, y);
+  }
+}
+if (DATA) frame();
+
+// ── Hit testing ─────────────────────────────────────────────────
+function nodeAt(px, py) {
+  let best = null, bestD = 22;
+  for (const n of nodes) {
+    if (n.em < 0.2) continue;
+    const d = Math.hypot(n.sx - px, n.sy - py);
+    const hit = Math.max(12, n.r * n.ss + 8);
+    if (d < hit && d < bestD) { best = n; bestD = d; }
+  }
+  return best;
+}
+
+// ── Pointer interaction ─────────────────────────────────────────
+const pointers = new Map();
+let dragging = false, moved = 0, lastX = 0, lastY = 0, lastPinch = 0;
+
+canvas.addEventListener('pointerdown', (e) => {
+  canvas.setPointerCapture(e.pointerId);
+  pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
   if (pointers.size === 1) {
-    dragging = true; lastX = e.clientX; lastY = e.clientY;
+    dragging = true; moved = 0; lastX = e.clientX; lastY = e.clientY;
     canvas.classList.add('dragging');
     cam.auto = false;
-    // hold still ~650ms → wake (phone equivalent of spacebar)
-    lpTimer = setTimeout(() => {
-      if (pointers.size === 1) {
-        wake();
-        if (navigator.vibrate) navigator.vibrate(30);
-      }
-    }, 650);
   } else if (pointers.size === 2) {
     const [a, b] = [...pointers.values()];
     lastPinch = Math.hypot(a.x - b.x, a.y - b.y);
   }
 });
 
-window.addEventListener('pointermove', e => {
+canvas.addEventListener('pointermove', (e) => {
   const p = pointers.get(e.pointerId);
-  if (!p) return;
-  p.x = e.clientX; p.y = e.clientY;
-  if (Math.hypot(p.x - p.sx, p.y - p.sy) > 12) clearTimeout(lpTimer);
+  if (p) { p.x = e.clientX; p.y = e.clientY; }
+
   if (pointers.size === 1 && dragging) {
-    cam.tYaw += (e.clientX - lastX) * 0.005;
-    cam.tPitch = Math.max(-1.2, Math.min(1.2, cam.tPitch + (e.clientY - lastY) * 0.005));
+    const dx = e.clientX - lastX, dy = e.clientY - lastY;
+    moved += Math.abs(dx) + Math.abs(dy);
+    cam.tYaw += dx * 0.005;
+    cam.tPitch = Math.max(-1.3, Math.min(1.3, cam.tPitch + dy * 0.005));
     lastX = e.clientX; lastY = e.clientY;
   } else if (pointers.size === 2) {
     const [a, b] = [...pointers.values()];
     const d = Math.hypot(a.x - b.x, a.y - b.y);
-    if (lastPinch > 0) {
-      cam.tZoom = Math.max(0.5, Math.min(2.2, cam.tZoom * (d / lastPinch)));
-    }
+    if (lastPinch > 0) cam.tZoom = clampZoom(cam.tZoom * (d / lastPinch));
     lastPinch = d;
+  } else if (!pointers.size) {
+    const hit = nodeAt(e.clientX, e.clientY);
+    if (hit !== hovered) {
+      hovered = hit;
+      canvas.classList.toggle('pointing', !!hit);
+    }
   }
 });
 
 function endPointer(e) {
+  const wasDragging = dragging && pointers.size === 1;
   pointers.delete(e.pointerId);
-  clearTimeout(lpTimer);
   if (pointers.size < 2) lastPinch = 0;
-  if (pointers.size === 0) {
+  if (!pointers.size) {
     dragging = false;
     canvas.classList.remove('dragging');
-    if (!focusedRegion) setTimeout(() => { if (!dragging) cam.auto = true; }, 4000);
+    if (wasDragging && moved < 8) {
+      const hit = nodeAt(e.clientX, e.clientY);
+      if (hit) select(hit); else clearSelection();
+    }
   }
 }
-window.addEventListener('pointerup', endPointer);
-window.addEventListener('pointercancel', endPointer);
+canvas.addEventListener('pointerup', endPointer);
+canvas.addEventListener('pointercancel', endPointer);
 
-canvas.addEventListener('wheel', e => {
+function clampZoom(z) { return Math.max(0.45, Math.min(3.2, z)); }
+
+canvas.addEventListener('wheel', (e) => {
   e.preventDefault();
-  cam.tZoom = Math.max(0.5, Math.min(2.2, cam.tZoom - e.deltaY * 0.0012));
+  cam.tZoom = clampZoom(cam.tZoom - e.deltaY * 0.0013);
 }, { passive: false });
 
-// ── Render loop ──
-function frame() {
-  requestAnimationFrame(frame);
-  t += 0.016;
+// ── Selection + detail panel ────────────────────────────────────
+const detailEl = $('detail');
+const stSel = $('st-sel');
 
-  if (cam.auto) cam.tYaw += 0.0016;   // slow idle orbit
-  cam.yaw   += (cam.tYaw   - cam.yaw)   * 0.06;
-  cam.pitch += (cam.tPitch - cam.pitch) * 0.06;
-  cam.zoom  += (cam.tZoom  - cam.zoom)  * 0.06;
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, (ch) => (
+    { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]
+  ));
+}
 
-  ctx.fillStyle = 'rgba(0,0,0,0.16)';
-  ctx.fillRect(0, 0, W, H);
+function focusOn(node) {
+  const [x, y, z] = node.p;
+  cam.tYaw = Math.atan2(x, z);
+  cam.tPitch = Math.max(-1.3, Math.min(1.3, -Math.atan2(y, Math.hypot(x, z))));
+  cam.tZoom = clampZoom(node.kind === 'pillar' ? 1.35 : 1.9);
+  cam.auto = false;
+}
 
-  // center glow
-  const pulse = 0.14 + 0.08 * Math.sin(t * 2.8);
-  const gr0 = ctx.createRadialGradient(W/2, H/2, 0, W/2, H/2, 110 * cam.zoom);
-  gr0.addColorStop(0, `rgba(200,210,255,${pulse})`);
-  gr0.addColorStop(0.35, `rgba(60,60,200,${pulse * 0.4})`);
-  gr0.addColorStop(1, 'rgba(0,0,0,0)');
-  ctx.beginPath(); ctx.arc(W/2, H/2, 110 * cam.zoom, 0, Math.PI * 2);
-  ctx.fillStyle = gr0; ctx.fill();
+function select(node, opts) {
+  selected = node;
+  focusOn(node);
+  renderDetail(node);
+  stSel.textContent = node.label.toUpperCase().slice(0, 42);
+  if (window.innerWidth <= 900 && !(opts && opts.quiet)) openPanel('right');
+}
 
-  // update + project nodes
-  for (const nd of nodes) {
-    nd.fireT -= 0.016;
-    if (nd.fireT <= 0) {
-      nd.firing = !nd.firing;
-      nd.fireT = nd.firing ? (Math.random() * 1.2 + 0.4) : (Math.random() * 4 + 2.5);
-      if (nd.firing && Math.random() < 0.3) spawnPulseFrom(nodes.indexOf(nd));
+function clearSelection() {
+  selected = null;
+  stSel.textContent = 'NO SELECTION';
+  detailEl.innerHTML =
+    '<div class="d-empty">Click any node in the graph, or search above.</div>';
+}
+
+function toolsFor(nodeId) {
+  return DATA.tools.filter((tool) => tool.node === nodeId);
+}
+
+function renderDetail(n) {
+  const parts = [];
+  parts.push(
+    `<span class="d-kind" style="background:${escapeHtml(n.color)}">${escapeHtml(n.kind)}</span>`,
+    `<div class="d-name">${escapeHtml(n.label)}</div>`,
+    `<div class="d-desc">${escapeHtml(n.detail || '')}</div>`
+  );
+
+  if (n.kind === 'skill') {
+    parts.push(`<div class="d-meta">Invoke <code>${escapeHtml(n.invoke)}</code></div>`);
+    if (n.sections && n.sections.length) {
+      parts.push('<div class="d-sec">WHAT IS INSIDE</div><ul class="d-list">');
+      parts.push(n.sections.map((s) => `<li>› ${escapeHtml(s)}</li>`).join(''));
+      parts.push('</ul>');
     }
-    const jx = nd.bx + Math.sin(t * nd.spd + nd.phase) * nd.drift;
-    const jy = nd.by + Math.cos(t * nd.spd * 0.71 + nd.phase) * nd.drift;
-    const jz = nd.bz + Math.sin(t * nd.spd * 0.53 + nd.phase * 2) * nd.drift;
-    const p = project(jx, jy, jz);
-    nd.sx = p.x; nd.sy = p.y; nd.ss = p.s; nd.sz = p.z;
+    if (n.links && n.links.length) {
+      parts.push('<div class="d-sec">EXTERNAL REFERENCES</div><ul class="d-list">');
+      parts.push(n.links.map((u) =>
+        `<li><a href="${escapeHtml(u)}" target="_blank" rel="noopener">${escapeHtml(u)}</a></li>`
+      ).join(''));
+      parts.push('</ul>');
+    }
+    parts.push(
+      '<div class="d-sec">SOURCE</div>',
+      `<ul class="d-list"><li><a href="${escapeHtml(DATA.repo)}/blob/master/${escapeHtml(n.path)}" ` +
+      `target="_blank" rel="noopener">${escapeHtml(n.path)}</a></li></ul>`
+    );
   }
 
-  // edges (precomputed — no per-frame O(n²))
-  for (const [i, j] of edges) {
-    const a = nodes[i], b = nodes[j];
-    const depth = (a.sz + b.sz) / 2;               // -1 back … +1 front
-    const alp = (0.06 + 0.13 * (depth + 1) / 2) *
-                (focusedRegion ? (nodes[i].ri === regionIndex(focusedRegion) || nodes[j].ri === regionIndex(focusedRegion) ? 1.6 : 0.35) : 1);
-    const [ar,ag,ab] = hex2rgb(a.col);
-    const [br,bg,bb] = hex2rgb(b.col);
-    const gr = ctx.createLinearGradient(a.sx, a.sy, b.sx, b.sy);
-    gr.addColorStop(0, `rgba(${ar},${ag},${ab},${alp})`);
-    gr.addColorStop(1, `rgba(${br},${bg},${bb},${alp})`);
-    ctx.beginPath(); ctx.moveTo(a.sx, a.sy); ctx.lineTo(b.sx, b.sy);
-    ctx.strokeStyle = gr; ctx.lineWidth = 0.5; ctx.stroke();
+  const tools = n.kind === 'subcategory' ? toolsFor(n.id) : [];
+  if (tools.length) {
+    parts.push(`<div class="d-sec">TOOLS · ${tools.length}</div><ul class="d-list">`);
+    parts.push(tools.map((tool) =>
+      `<li><a href="${escapeHtml(tool.url)}" target="_blank" rel="noopener">${escapeHtml(tool.name)}</a>` +
+      (tool.desc ? ` — ${escapeHtml(tool.desc)}` : '') + '</li>'
+    ).join(''));
+    parts.push('</ul>');
   }
 
-  // pulses
-  pulses = pulses.filter(p => {
-    p.p += p.spd;
-    if (p.p >= 1) return false;
-    const a = nodes[p.i], b = nodes[p.j];
-    const x = a.sx + (b.sx - a.sx) * p.p;
-    const y = a.sy + (b.sy - a.sy) * p.p;
-    const [r,g,bl] = hex2rgb(a.col);
-    const gp = ctx.createRadialGradient(x, y, 0, x, y, 5);
-    gp.addColorStop(0, `rgba(${r},${g},${bl},0.9)`);
-    gp.addColorStop(1, 'rgba(0,0,0,0)');
-    ctx.beginPath(); ctx.arc(x, y, 5, 0, Math.PI * 2);
-    ctx.fillStyle = gp; ctx.fill();
-    return true;
+  const neighbours = (adj.get(n.id) || []).map((id) => byId.get(id)).filter(Boolean);
+  if (neighbours.length) {
+    parts.push(`<div class="d-sec">CONNECTED · ${neighbours.length}</div><div>`);
+    parts.push(neighbours.map((nb) =>
+      `<span class="chiplink" data-goto="${escapeHtml(nb.id)}">${escapeHtml(nb.label)}</span>`
+    ).join(''));
+    parts.push('</div>');
+  }
+
+  detailEl.innerHTML = parts.join('');
+}
+
+detailEl.addEventListener('click', (e) => {
+  const chip = e.target.closest('[data-goto]');
+  if (!chip) return;
+  const node = byId.get(chip.getAttribute('data-goto'));
+  if (node) select(node);
+});
+
+// ── Search ──────────────────────────────────────────────────────
+const qEl = $('q');
+const resultsEl = $('results');
+
+const searchIndex = DATA ? [
+  ...nodes.map((n) => ({
+    kind: n.kind, name: n.label, ctx: n.pillar || '', hay:
+      (n.label + ' ' + (n.detail || '') + ' ' + (n.sections || []).join(' ')).toLowerCase(),
+    nodeId: n.id,
+  })),
+  ...DATA.tools.map((tool) => ({
+    kind: 'tool', name: tool.name, ctx: tool.sub, url: tool.url,
+    hay: (tool.name + ' ' + tool.desc + ' ' + tool.cat + ' ' + tool.sub).toLowerCase(),
+    nodeId: tool.node,
+  })),
+] : [];
+
+let resultRows = [];
+let resultCursor = -1;
+
+function runSearch(raw) {
+  const query = raw.trim().toLowerCase();
+  if (!query) {
+    matches = new Set();
+    resultRows = [];
+    resultsEl.classList.remove('on');
+    resultsEl.innerHTML = '';
+    return;
+  }
+
+  const terms = query.split(/\s+/);
+  const scored = [];
+  for (const item of searchIndex) {
+    if (!terms.every((term) => item.hay.includes(term))) continue;
+    const name = item.name.toLowerCase();
+    let score = 0;
+    if (name === query) score += 100;
+    else if (name.startsWith(query)) score += 50;
+    else if (name.includes(query)) score += 25;
+    if (item.kind === 'skill') score += 8;
+    if (item.kind === 'pillar') score += 6;
+    scored.push({ item, score: score - name.length * 0.02 });
+  }
+  scored.sort((a, b) => b.score - a.score);
+
+  resultRows = scored.slice(0, 60).map((s) => s.item);
+  matches = new Set(resultRows.map((r) => r.nodeId).filter(Boolean));
+  resultCursor = -1;
+
+  if (!resultRows.length) {
+    resultsEl.innerHTML = `<div class="res-empty">No match for “${escapeHtml(raw.trim())}”.</div>`;
+  } else {
+    resultsEl.innerHTML = resultRows.map((r, i) =>
+      `<div class="res" data-i="${i}" role="option">` +
+      `<span class="res-kind ${r.kind === 'tool' ? 'tool' : ''}">${escapeHtml(r.kind)}</span>` +
+      `<span class="res-name">${escapeHtml(r.name)}</span>` +
+      `<span class="res-ctx">${escapeHtml(r.ctx || '')}</span></div>`
+    ).join('');
+  }
+  resultsEl.classList.add('on');
+}
+
+function openResult(row) {
+  if (!row) return;
+  if (row.kind === 'tool' && row.url) {
+    window.open(row.url, '_blank', 'noopener');
+    return;
+  }
+  const node = byId.get(row.nodeId);
+  if (node) select(node);
+}
+
+qEl.addEventListener('input', () => runSearch(qEl.value));
+
+qEl.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') { qEl.value = ''; runSearch(''); qEl.blur(); return; }
+  if (!resultRows.length) return;
+  if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+    e.preventDefault();
+    resultCursor = (resultCursor + (e.key === 'ArrowDown' ? 1 : -1) + resultRows.length) % resultRows.length;
+    [...resultsEl.children].forEach((el, i) => el.classList.toggle('sel', i === resultCursor));
+    const active = resultsEl.children[resultCursor];
+    if (active) active.scrollIntoView({ block: 'nearest' });
+  } else if (e.key === 'Enter') {
+    e.preventDefault();
+    openResult(resultRows[resultCursor >= 0 ? resultCursor : 0]);
+  }
+});
+
+resultsEl.addEventListener('click', (e) => {
+  const row = e.target.closest('.res');
+  if (row) openResult(resultRows[Number(row.getAttribute('data-i'))]);
+});
+
+document.addEventListener('keydown', (e) => {
+  const typing = /^(INPUT|TEXTAREA)$/.test(document.activeElement.tagName);
+  if (e.key === '/' && !typing) { e.preventDefault(); qEl.focus(); qEl.select(); }
+  else if (e.key === 'Escape' && !typing) { qEl.value = ''; runSearch(''); clearSelection(); }
+});
+
+// ── Left panel: metrics, legend, roadmap ────────────────────────
+if (DATA) {
+  $('m-skills').textContent = DATA.counts.skills;
+  $('m-tools').textContent = DATA.counts.tools;
+  $('m-cats').textContent = DATA.counts.categories;
+  $('m-nodes').textContent = nodes.length;
+  $('m-edges').textContent = edges.length;
+
+  $('legend').innerHTML = DATA.pillars.map((p) => {
+    const count = nodes.filter((n) => n.pillar === p.id && n.kind !== 'pillar').length;
+    return `<div class="leg" data-pillar="${escapeHtml(p.id)}">` +
+      `<span class="leg-dot" style="background:${escapeHtml(p.color)}"></span>` +
+      `<span class="leg-name">${escapeHtml(p.emoji + ' ' + p.name)}</span>` +
+      `<span class="leg-n">${count}</span></div>`;
+  }).join('');
+
+  $('legend').addEventListener('click', (e) => {
+    const row = e.target.closest('[data-pillar]');
+    if (!row) return;
+    const node = byId.get('pillar:' + row.getAttribute('data-pillar'));
+    if (node) select(node);
   });
-
-  // nodes back-to-front
-  const order = nodes.slice().sort((a, b) => a.sz - b.sz);
-  for (const nd of order) {
-    const [r,g,b] = hex2rgb(nd.col);
-    const depthFade = 0.35 + 0.65 * (nd.sz + 1) / 2;
-    const dim = focusedRegion && nd.ri !== regionIndex(focusedRegion) ? 0.35 : 1;
-    const alpha = (nd.firing ? 0.95 : 0.5 + 0.18 * Math.sin(t * 2 + nd.phase)) * depthFade * dim;
-    const sz = nd.size * nd.ss * (nd.firing ? 2.2 : 1);
-    const glow = (nd.firing ? 13 : 7) * nd.ss;
-    const gn = ctx.createRadialGradient(nd.sx, nd.sy, 0, nd.sx, nd.sy, glow);
-    gn.addColorStop(0, `rgba(${r},${g},${b},${alpha})`);
-    gn.addColorStop(1, 'rgba(0,0,0,0)');
-    ctx.beginPath(); ctx.arc(nd.sx, nd.sy, glow, 0, Math.PI * 2);
-    ctx.fillStyle = gn; ctx.fill();
-    ctx.beginPath(); ctx.arc(nd.sx, nd.sy, sz, 0, Math.PI * 2);
-    ctx.fillStyle = `rgba(${r},${g},${b},${Math.min(1, alpha * 1.5)})`;
-    ctx.fill();
-  }
-
-  // reposition region labels at projected 3D anchors
-  for (const reg of REGIONS) {
-    const p = project(reg.c[0] * 1.35, reg.c[1] * 1.35, reg.c[2] * 1.35);
-    const front = (p.z + 1) / 2;                    // 0 back … 1 front
-    reg.el.style.transform = `translate(-50%,-50%) translate(${p.x}px,${p.y}px) scale(${0.75 + 0.35 * front})`;
-    reg.el.style.opacity = (0.25 + 0.75 * front).toFixed(2);
-    reg.el.style.zIndex = Math.round(front * 100);
-  }
 }
 
-function regionIndex(reg) { return REGIONS.indexOf(reg); }
-
-function spawnPulseFrom(i) {
-  const cand = edges.filter(e => e[0] === i || e[1] === i);
-  if (!cand.length) return;
-  const [a, b] = cand[Math.floor(Math.random() * cand.length)];
-  pulses.push({ i: a, j: b, p: 0, spd: Math.random() * 0.03 + 0.015 });
-}
-
-frame();
-
-// ════════════════════════════════════════════════════════
-//  Sound (WebAudio, off by default)
-// ════════════════════════════════════════════════════════
-let audioCtx = null, soundOn = false;
-const sndBtn = document.getElementById('snd-btn');
-sndBtn.addEventListener('click', () => {
-  soundOn = !soundOn;
-  sndBtn.textContent = 'SOUND: ' + (soundOn ? 'ON' : 'OFF');
-  sndBtn.classList.toggle('on', soundOn);
-  if (soundOn && !audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  if (soundOn) blip(520, 0.07);
-});
-
-function blip(freq, dur) {
-  if (!soundOn || !audioCtx) return;
-  const o = audioCtx.createOscillator();
-  const g = audioCtx.createGain();
-  o.type = 'sine'; o.frequency.value = freq;
-  g.gain.setValueAtTime(0.08, audioCtx.currentTime);
-  g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + dur);
-  o.connect(g); g.connect(audioCtx.destination);
-  o.start(); o.stop(audioCtx.currentTime + dur);
-}
-
-function wakeChime() { blip(440, 0.1); setTimeout(() => blip(880, 0.15), 110); }
-
-// ════════════════════════════════════════════════════════
-//  Voice wake word — "Hey Zero" (Web Speech API + Space)
-// ════════════════════════════════════════════════════════
-const micChip = document.getElementById('mic-chip');
-const micTxt  = document.getElementById('mic-txt');
-const tEl     = document.getElementById('t-text');
-const waveEl  = document.getElementById('wave');
-const ringEl  = document.getElementById('wake-ring');
-let awake = false;
-
-function wake() {
-  if (awake) return;
-  awake = true;
-  micChip.className = 'mic-chip wake';
-  micTxt.textContent = 'WAKE WORD DETECTED';
-  tEl.textContent = 'YES SIR — LISTENING...';
-  tEl.classList.add('awake');
-  waveEl.classList.add('on');
-  ringEl.classList.remove('fire'); void ringEl.offsetWidth; ringEl.classList.add('fire');
-  wakeChime();
-  setTimeout(() => {
-    awake = false;
-    tEl.classList.remove('awake');
-    waveEl.classList.remove('on');
-    micChip.className = speechLive ? 'mic-chip live' : 'mic-chip';
-    micTxt.textContent = speechLive ? 'MIC LIVE · SAY "HEY ZERO"' : 'MIC OFFLINE · PRESS SPACE TO WAKE';
-  }, 4000);
-}
-
-window.addEventListener('keydown', e => {
-  if (e.code === 'Space' && e.target === document.body) { e.preventDefault(); wake(); }
-});
-
-let speechLive = false, speechBlocked = false, recRef = null;
-(function initSpeech() {
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SR) { micTxt.textContent = 'NO MIC API · TAP HERE OR HOLD SCREEN TO WAKE'; return; }
-  try {
-    const rec = recRef = new SR();
-    rec.continuous = true;
-    rec.interimResults = true;
-    rec.lang = 'en-US';
-    rec.onstart = () => {
-      speechLive = true; speechBlocked = false;
-      if (!awake) { micChip.className = 'mic-chip live'; micTxt.textContent = 'MIC LIVE · SAY "HEY ZERO"'; }
-    };
-    rec.onresult = ev => {
-      for (let i = ev.resultIndex; i < ev.results.length; i++) {
-        const txt = ev.results[i][0].transcript.toLowerCase();
-        if (/\bhey,?\s*zero\b|\bhay,?\s*zero\b|\bhey,?\s*hero\b/.test(txt)) wake();
-      }
-    };
-    rec.onerror = ev => {
-      speechLive = false;
-      if (ev.error === 'not-allowed' || ev.error === 'service-not-allowed') {
-        speechBlocked = true;   // don't auto-retry; needs a user tap
-        micChip.className = 'mic-chip';
-        micTxt.textContent = 'TAP HERE TO ENABLE MIC';
-      }
-    };
-    rec.onend = () => {
-      speechLive = false;
-      if (speechBlocked) return;
-      if (!awake) { micChip.className = 'mic-chip'; micTxt.textContent = 'MIC OFFLINE · TAP HERE OR HOLD SCREEN'; }
-      setTimeout(() => { try { rec.start(); } catch (_) {} }, 2000);
-    };
-    rec.start();
-  } catch (_) { micTxt.textContent = 'MIC UNAVAILABLE · TAP HERE OR HOLD SCREEN TO WAKE'; }
-})();
-
-// Tap the mic chip: enable the mic (user gesture unlocks it on mobile),
-// or act as a wake button when speech isn't available at all.
-micChip.addEventListener('click', () => {
-  if (recRef && !speechLive) {
-    speechBlocked = false;
-    try { recRef.start(); return; } catch (_) {}
-  }
-  if (!recRef) wake();
-});
-
-// ════════════════════════════════════════════════════════
-//  UI Logic
-// ════════════════════════════════════════════════════════
-
-// Persistence
+// ── Persistence ─────────────────────────────────────────────────
 const store = {
-  get tasks()  { return parseInt(localStorage.getItem('zero.tasks') || '0', 10); },
-  set tasks(v) { localStorage.setItem('zero.tasks', v); },
-  get uptime() { return parseInt(localStorage.getItem('zero.uptime') || '0', 10); },
-  set uptime(v){ localStorage.setItem('zero.uptime', v); },
+  read(key, fallback) {
+    try {
+      const raw = localStorage.getItem(key);
+      return raw === null ? fallback : JSON.parse(raw);
+    } catch (_) { return fallback; }
+  },
+  write(key, value) {
+    try { localStorage.setItem(key, JSON.stringify(value)); } catch (_) { /* private mode */ }
+  },
 };
-let tasksDone = store.tasks;
-const priorUptime = store.uptime;
-const sessionStart = Date.now();
-document.getElementById('sb-tasks').textContent = tasksDone;
-document.getElementById('tasks-done').textContent = tasksDone + ' TASKS DONE';
 
+// Roadmap — defaults come from the generated data, ticks are remembered.
+const roadmapEl = $('roadmap');
+let roadDone = store.read('zero.roadmap', null);
+
+function renderRoadmap() {
+  if (!DATA) return;
+  if (!roadDone || typeof roadDone !== 'object') {
+    roadDone = {};
+    for (const phase of DATA.roadmap) roadDone[phase.id] = phase.done;
+  }
+  // New phases added by the generator show up with their shipped default.
+  for (const phase of DATA.roadmap) {
+    if (!(phase.id in roadDone)) roadDone[phase.id] = phase.done;
+  }
+
+  roadmapEl.innerHTML = DATA.roadmap.map((phase) =>
+    `<div class="road-item ${roadDone[phase.id] ? 'done' : ''}" data-phase="${escapeHtml(phase.id)}">` +
+    `<span class="road-box">${roadDone[phase.id] ? '✓' : ''}</span>` +
+    `<span class="road-label">${escapeHtml(phase.label)}</span></div>`
+  ).join('');
+
+  const done = DATA.roadmap.filter((p) => roadDone[p.id]).length;
+  $('road-count').textContent = `${done}/${DATA.roadmap.length}`;
+}
+
+roadmapEl.addEventListener('click', (e) => {
+  const row = e.target.closest('[data-phase]');
+  if (!row) return;
+  const id = row.getAttribute('data-phase');
+  roadDone[id] = !roadDone[id];
+  store.write('zero.roadmap', roadDone);
+  renderRoadmap();
+});
+renderRoadmap();
+
+// Capture inbox — local notes, exportable as Markdown for the vault.
+const capList = $('cap-list');
+const capInput = $('cap-input');
+let captures = store.read('zero.captures', []);
+if (!Array.isArray(captures)) captures = [];
+
+function renderCaptures() {
+  $('cap-count').textContent = captures.length ? String(captures.length) : '';
+  capList.innerHTML = captures.map((note, i) =>
+    `<div class="cap-note">${escapeHtml(note.text)}` +
+    `<time>${escapeHtml(new Date(note.at).toLocaleString())}</time>` +
+    `<span class="cap-del" data-del="${i}" title="Delete">×</span></div>`
+  ).join('');
+}
+
+$('cap-add').addEventListener('click', () => {
+  const text = capInput.value.trim();
+  if (!text) { toast('Nothing to capture'); return; }
+  captures.unshift({ text, at: Date.now() });
+  store.write('zero.captures', captures);
+  capInput.value = '';
+  renderCaptures();
+  toast('Captured');
+});
+
+capInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) $('cap-add').click();
+});
+
+capList.addEventListener('click', (e) => {
+  const del = e.target.closest('[data-del]');
+  if (!del) return;
+  captures.splice(Number(del.getAttribute('data-del')), 1);
+  store.write('zero.captures', captures);
+  renderCaptures();
+});
+
+$('cap-clear').addEventListener('click', () => {
+  if (!captures.length) return;
+  if (!window.confirm(`Delete all ${captures.length} captured notes?`)) return;
+  captures = [];
+  store.write('zero.captures', captures);
+  renderCaptures();
+  toast('Capture inbox cleared');
+});
+
+$('cap-export').addEventListener('click', () => {
+  if (!captures.length) { toast('Nothing to export'); return; }
+  const lines = [
+    '---',
+    'title: Capture Inbox',
+    'tags:',
+    '  - capture',
+    '---',
+    '',
+    '# Capture Inbox',
+    '',
+    'Exported from the [[Z.E.R.O. Console]]. Link each note to its pillar, then delete it here.',
+    '',
+  ];
+  for (const note of captures) {
+    lines.push(`## ${new Date(note.at).toISOString().slice(0, 16).replace('T', ' ')}`, '', note.text, '');
+  }
+  const blob = new Blob([lines.join('\n')], { type: 'text/markdown;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'Capture Inbox.md';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  toast('Exported — drop it into vault/');
+});
+renderCaptures();
+
+// ── Uptime ──────────────────────────────────────────────────────
+const sessionStart = Date.now();
+const priorUptime = Number(store.read('zero.uptime', 0)) || 0;
 function totalUptime() { return priorUptime + Math.floor((Date.now() - sessionStart) / 1000); }
 setInterval(() => {
   const s = totalUptime();
-  const hh = String(Math.floor(s / 3600)).padStart(2, '0');
-  const mm = String(Math.floor((s % 3600) / 60)).padStart(2, '0');
-  const ss = String(s % 60).padStart(2, '0');
-  document.getElementById('sb-uptime').textContent = `${hh}:${mm}:${ss}`;
+  $('sys-uptime').textContent = [s / 3600, (s % 3600) / 60, s % 60]
+    .map((v) => String(Math.floor(v)).padStart(2, '0')).join(':');
 }, 1000);
-setInterval(() => { store.uptime = totalUptime(); }, 5000);
+setInterval(() => store.write('zero.uptime', totalUptime()), 10000);
+window.addEventListener('pagehide', () => store.write('zero.uptime', totalUptime()));
 
-// Jitter live metrics
-setInterval(() => {
-  document.getElementById('neuron-count').textContent = (1800 + Math.floor(Math.random() * 100)).toLocaleString();
-  document.getElementById('fire-rate').textContent = (0.6 + Math.random() * 0.4).toFixed(1) + 'k/s';
-  document.getElementById('conn-count').textContent = String(edges.length);
-  document.getElementById('m-cpu').textContent = (1 + Math.floor(Math.random() * 6)) + '%';
-  document.getElementById('m-ops').textContent = (800 + Math.floor(Math.random() * 100)) + '/s';
-}, 1500);
-
-// Activity graph
-const actSegs = document.querySelectorAll('.act-seg');
-setInterval(() => {
-  actSegs.forEach(seg => seg.classList.toggle('on', Math.random() < 0.55));
-}, 300);
-
-// Section chip rotation
-const SECTION_IDS = ['s-sales','s-accts','s-crea','s-eng','s-res','s-ops','s-fin','s-comm'];
-let activeChip = 0;
-document.getElementById(SECTION_IDS[0]).classList.add('active');
-setInterval(() => {
-  document.getElementById(SECTION_IDS[activeChip]).classList.remove('active');
-  activeChip = (activeChip + 1) % SECTION_IDS.length;
-  document.getElementById(SECTION_IDS[activeChip]).classList.add('active');
-}, 2000);
-
-// Agent progress + completion
-const agents = [1,2,3,4,5,6].map(n => ({
-  prog: 'ap' + n, status: 'as' + n, progress: Math.random() * 50 + 10,
-}));
-agents.forEach(a => { document.getElementById(a.prog).style.width = a.progress + '%'; });
-
-setInterval(() => {
-  let running = 0;
-  agents.forEach(a => {
-    const st = document.getElementById(a.status);
-    if (!st.classList.contains('running')) return;
-    running++;
-    a.progress = Math.min(100, a.progress + Math.random() * 3 + 0.5);
-    document.getElementById(a.prog).style.width = a.progress + '%';
-    if (a.progress >= 100) {
-      st.className = 'a-status complete';
-      st.textContent = '✓ complete';
-      blip(740, 0.09);
-      tasksDone++; store.tasks = tasksDone;
-      document.getElementById('tasks-done').textContent = tasksDone + ' TASKS DONE';
-      document.getElementById('sb-tasks').textContent = tasksDone;
-      setTimeout(() => {
-        a.progress = Math.random() * 15;
-        document.getElementById(a.prog).style.width = a.progress + '%';
-        st.className = 'a-status running';
-        st.textContent = 'running...';
-      }, 4000 + Math.random() * 4000);
-    }
-  });
-  const act = agents.filter(a => document.getElementById(a.status).classList.contains('running')).length;
-  document.getElementById('agent-active').textContent = act + ' AGENT' + (act !== 1 ? 'S' : '') + ' ACTIVE';
-  document.getElementById('sb-agents').textContent = act;
-}, 800);
-
-// View cycling — live counter, info panels, word flash
-const WORDS = ['CODE', 'AND', 'DRIVING,', 'THAT', 'BUSINESS.', 'PROJECT', 'SIR.'];
-let view = 0, wordIdx = 0;
-const wordEl  = document.getElementById('word-flash');
-const infoYou = document.getElementById('info-you');
-const infoBiz = document.getElementById('info-biz');
-
-function cycleView() {
-  view = (view + 1) % 7;
-  document.getElementById('live-txt').textContent = `LIVE 0${view + 1} / 07`;
-  wordEl.textContent = WORDS[wordIdx++ % WORDS.length];
-  wordEl.style.opacity = '1';
-  setTimeout(() => { wordEl.style.opacity = '0'; }, 2000);
-  infoYou.style.opacity = view >= 3 && view <= 5 ? '1' : '0';
-  infoBiz.style.opacity = view >= 4 && view <= 5 ? '1' : '0';
+// ── Toast ───────────────────────────────────────────────────────
+let toastTimer = null;
+function toast(message) {
+  const el = $('toast');
+  el.textContent = message;
+  el.classList.add('on');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('on'), 1900);
 }
-setInterval(cycleView, 6500);
-cycleView();
 
-// Terminal rotating messages (paused while awake)
-const TERMINAL_MSGS = [
-  'LISTENING FOR "HEY ZERO"...',
-  'QUALIFYING NEW GHL LEAD...',
-  'DRAFTING OUTREACH BATCH...',
-  'SCANNING AI TOOL RELEASES...',
-  'RENDERING AD CREATIVE...',
-  'AUDITING CLIENT PIPELINE...',
-  'WRITING WEEKLY ROLLUP...',
-  'ALL AGENTS RUNNING · PARALLEL MINDS ACTIVE',
-  'PERSISTENT MEMORY · CONTEXT LOADED',
-  'PYTHON · LOCAL-FIRST · FREE MODEL',
-];
-let tIdx = 0;
-setInterval(() => {
-  if (!awake) tEl.textContent = TERMINAL_MSGS[tIdx++ % TERMINAL_MSGS.length];
-}, 3500);
+// ── Panel toggles (mobile) + reset ──────────────────────────────
+function openPanel(side) {
+  const panel = side === 'left' ? $('p-left') : $('p-right');
+  const other = side === 'left' ? $('p-right') : $('p-left');
+  other.classList.remove('open');
+  panel.classList.add('open');
+  $('btn-left').classList.toggle('on', side === 'left');
+  $('btn-right').classList.toggle('on', side === 'right');
+}
+function togglePanel(side) {
+  const panel = side === 'left' ? $('p-left') : $('p-right');
+  if (panel.classList.contains('open')) {
+    panel.classList.remove('open');
+    $(side === 'left' ? 'btn-left' : 'btn-right').classList.remove('on');
+  } else {
+    openPanel(side);
+  }
+}
+$('btn-left').addEventListener('click', () => togglePanel('left'));
+$('btn-right').addEventListener('click', () => togglePanel('right'));
+
+$('btn-reset').addEventListener('click', () => {
+  cam.tYaw = CAM_HOME.yaw; cam.tPitch = CAM_HOME.pitch; cam.tZoom = CAM_HOME.zoom;
+  cam.auto = true;
+  qEl.value = ''; runSearch('');
+  clearSelection();
+  toast('View reset');
+});
+
+// ── Voice search (optional, never required) ─────────────────────
+// "Hey Zero" wakes it; the next utterance is typed into the search box.
+const micBtn = $('btn-mic');
+const stMic = $('st-mic');
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+let rec = null, micOn = false, awake = false, wakeTimer = null;
+
+function setMicStatus(text, on) {
+  stMic.textContent = text;
+  stMic.className = on ? 'on' : '';
+  micBtn.classList.toggle('on', micOn);
+}
+
+function stopMic() {
+  micOn = false; awake = false;
+  clearTimeout(wakeTimer);
+  if (rec) { try { rec.stop(); } catch (_) { /* already stopped */ } }
+  setMicStatus('MIC OFF', false);
+}
+
+function startMic() {
+  if (!SR) { toast('This browser has no Web Speech API'); return; }
+  if (!rec) {
+    rec = new SR();
+    rec.continuous = true;
+    rec.interimResults = false;
+    rec.lang = 'en-US';
+
+    rec.onstart = () => setMicStatus('MIC LIVE · SAY "HEY ZERO"', true);
+
+    rec.onresult = (ev) => {
+      for (let i = ev.resultIndex; i < ev.results.length; i++) {
+        const said = ev.results[i][0].transcript.trim();
+        const lower = said.toLowerCase();
+        if (!awake) {
+          const m = lower.match(/\b(?:hey|hi|ok)[, ]+(?:zero|hero)\b[,.]?\s*(.*)$/);
+          if (!m) continue;
+          awake = true;
+          setMicStatus('LISTENING…', true);
+          clearTimeout(wakeTimer);
+          wakeTimer = setTimeout(() => {
+            awake = false;
+            setMicStatus('MIC LIVE · SAY "HEY ZERO"', true);
+          }, 9000);
+          if (m[1]) { awake = false; voiceQuery(m[1]); }
+        } else {
+          awake = false;
+          clearTimeout(wakeTimer);
+          voiceQuery(said);
+        }
+      }
+    };
+
+    rec.onerror = (ev) => {
+      if (ev.error === 'not-allowed' || ev.error === 'service-not-allowed') {
+        micOn = false;
+        setMicStatus('MIC BLOCKED', false);
+        toast('Microphone permission denied');
+      }
+    };
+
+    rec.onend = () => {
+      if (!micOn) { setMicStatus('MIC OFF', false); return; }
+      // Chrome ends the session periodically; restart while the user wants it on.
+      setTimeout(() => { if (micOn) { try { rec.start(); } catch (_) { /* racing restart */ } } }, 400);
+    };
+  }
+  micOn = true;
+  try { rec.start(); } catch (_) { /* already running */ }
+  setMicStatus('MIC LIVE · SAY "HEY ZERO"', true);
+}
+
+function voiceQuery(text) {
+  const query = text.replace(/[.?!]+$/, '').trim();
+  if (!query) { setMicStatus('MIC LIVE · SAY "HEY ZERO"', true); return; }
+  qEl.value = query;
+  runSearch(query);
+  setMicStatus('MIC LIVE · SAY "HEY ZERO"', true);
+  if (resultRows.length) { openResult(resultRows[0]); toast('Voice: ' + query); }
+  else toast('No match for “' + query + '”');
+}
+
+micBtn.addEventListener('click', () => (micOn ? stopMic() : startMic()));
+if (!SR) setMicStatus('MIC UNAVAILABLE', false);
+
+// ── Service worker (shares the site-root registration) ──────────
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('../sw.js').catch(() => { /* offline-only feature */ });
+  });
+}
+
+// ── Deep link: #node=<id> ───────────────────────────────────────
+function applyHash() {
+  const m = location.hash.match(/^#node=(.+)$/);
+  if (!m) return;
+  const node = byId.get(decodeURIComponent(m[1]));
+  if (node) select(node, { quiet: true });
+}
+window.addEventListener('hashchange', applyHash);
+if (DATA) applyHash();
 </script>
 </body>
 </html>
