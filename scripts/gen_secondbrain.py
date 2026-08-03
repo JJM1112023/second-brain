@@ -470,6 +470,7 @@ def emit_vault(model: dict) -> dict[str, str]:
             "| `src/diskusage.sh` | Disk usage with alert thresholds |",
             "| `src/logclean.sh` | Rotate and compress old logs |",
             "| `src/netdiag.sh` | Network diagnostics |",
+            "| `src/safeinstall.sh` | Safe curl-pipe-sh alternative with checksum pinning |",
             "| `src/sslcheck.sh` | TLS certificate expiry checker |",
             "| `lib/common.sh` | Shared helpers (sourced, never executed) |",
             "",

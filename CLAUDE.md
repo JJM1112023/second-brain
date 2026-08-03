@@ -57,6 +57,7 @@ This is a curated "Awesome" list repository — a collection of tools, manuals, 
 │   ├── diskusage.sh         #   disk usage reporter with alert thresholds
 │   ├── logclean.sh          #   rotate/compress old logs
 │   ├── netdiag.sh           #   network diagnostics (ping, DNS, traceroute, port)
+│   ├── safeinstall.sh       #   safe curl|sh alternative (checksum pinning, review gate)
 │   └── sslcheck.sh          #   SSL/TLS certificate expiry checker
 ├── lib/
 │   └── common.sh            # Shared bash helpers (print_header, require_cmd, ...) — sourced, not run

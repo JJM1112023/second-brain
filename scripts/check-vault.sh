@@ -36,7 +36,7 @@ failures = []
 # vault/Private/ is the gitignored clone of the private half of the brain —
 # personal notes, never part of this repo, never checked by this gate.
 notes = sorted(
-    p for p in VAULT.rglob("*.md") if "Private" not in p.relative_to(VAULT).parts
+    p for p in VAULT.rglob("*.md") if not p.is_relative_to(VAULT / "Private")
 )
 by_name = {}
 for note in notes:
