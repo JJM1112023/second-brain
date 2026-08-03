@@ -2145,6 +2145,47 @@ mcEl.addEventListener('click', (e) => {
   }
 });
 
+// ── Cross-tab sync ──────────────────────────────────────────────
+// Every save serialises a whole store, so a tab holding a stale in-memory
+// copy used to erase edits made in another tab or PWA window. The storage
+// event fires in all OTHER tabs whenever a key changes; folding the new value
+// back in here means this tab's next write already includes them — and the
+// visible UI follows along live.
+window.addEventListener('storage', (e) => {
+  if (!e.key || !e.key.startsWith('zero.')) return;
+  const incoming = store.read(e.key, null);
+  switch (e.key) {
+    case 'zero.nodes': {
+      userData = incoming && typeof incoming === 'object' && !Array.isArray(incoming)
+        ? incoming : {};
+      // Never repaint under an active editor — it would clobber the caret and
+      // whatever is being typed. Saves fire per keystroke, so local edits to
+      // the same node win on the next key anyway.
+      const editing = document.activeElement && /^(d-note|d-tags)$/.test(document.activeElement.id || '');
+      if (selected && !editing) renderDetail(selected);
+      break;
+    }
+    case 'zero.roadmap':
+      roadDone = incoming;          // renderRoadmap re-validates the shape
+      renderRoadmap();
+      break;
+    case 'zero.captures':
+      captures = Array.isArray(incoming)
+        ? incoming.filter((n) => n && typeof n.text === 'string' && Number.isFinite(n.at))
+        : [];
+      renderCaptures();
+      break;
+    case 'zero.events':
+      events = Array.isArray(incoming)
+        ? incoming.filter((ev) => ev && typeof ev.text === 'string' && Number.isFinite(ev.at))
+        : [];
+      break;
+    default:
+      return;                       // zero.uptime etc — nothing rendered from them
+  }
+  if (mcOpen) renderMC();
+});
+
 function applyHash() {
   const m = location.hash.match(/^#node=(.+)$/);
   if (!m) return;
