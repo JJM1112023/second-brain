@@ -6,7 +6,7 @@
  *   - Nav requests: network-first, fall back to cached shell (works offline)
  *   - New SW takes control immediately; page can prompt for refresh
  */
-const VERSION = "v1.3.0";
+const VERSION = "v1.3.1";
 const SHELL = "ninja-shell-" + VERSION;
 const RUNTIME = "ninja-runtime-" + VERSION;
 
@@ -47,6 +47,21 @@ function isNav(req) {
   return req.mode === "navigate" || (req.method === "GET" && req.headers.get("accept")?.includes("text/html"));
 }
 
+// Store a fresh copy in the cache that will actually serve the next read.
+// caches.match() searches caches in creation order and SHELL is created at
+// install, so a refresh written only into RUNTIME is permanently shadowed by
+// the install-time SHELL entry — precached assets (brain-data.js above all)
+// would stay frozen until the next VERSION bump. Overwrite the SHELL entry
+// when one exists; everything else goes to RUNTIME as before.
+function refresh(req, res) {
+  const copy = res.clone();
+  return caches.open(SHELL).then((shell) =>
+    shell.match(req).then((precached) =>
+      precached ? shell.put(req, copy) : caches.open(RUNTIME).then((c) => c.put(req, copy))
+    )
+  );
+}
+
 self.addEventListener("fetch", (event) => {
   const req = event.request;
   if (req.method !== "GET") return;
@@ -56,8 +71,9 @@ self.addEventListener("fetch", (event) => {
     event.respondWith(
       fetch(req)
         .then((res) => {
-          const copy = res.clone();
-          caches.open(RUNTIME).then((c) => c.put(req, copy));
+          // Only cache good responses — a captured 404/500 page would be
+          // replayed to offline users as if it were the app.
+          if (res && res.ok) refresh(req, res);
           return res;
         })
         // Offline: prefer this page's own precached copy (so /zero-brain/
@@ -81,10 +97,7 @@ self.addEventListener("fetch", (event) => {
       caches.match(req).then((cached) => {
         const fetchPromise = fetch(req)
           .then((res) => {
-            if (res && res.status === 200) {
-              const copy = res.clone();
-              caches.open(RUNTIME).then((c) => c.put(req, copy));
-            }
+            if (res && res.status === 200) refresh(req, res);
             return res;
           })
           .catch(() => cached);
