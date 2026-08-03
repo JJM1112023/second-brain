@@ -39,7 +39,7 @@ gate() {
 
 gate "ShellCheck" shellcheck \
   shellcheck -s bash -e 1072,1094 -x \
-    src/syshealth.sh src/diskusage.sh src/logclean.sh src/netdiag.sh src/sslcheck.sh \
+    src/*.sh \
     lib/common.sh bin/git-template-full \
     scripts/validate-pwa.sh scripts/check-readme.sh scripts/install-hooks.sh \
     scripts/check-vault.sh scripts/check-all.sh \
