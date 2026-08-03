@@ -13,10 +13,12 @@
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
 :root {
-  --cy: #00d2ff;
-  --dim: #6c8296;
-  --panel: rgba(4, 10, 16, 0.82);
-  --line: rgba(0, 200, 255, 0.22);
+  --cy: #4ff5d2;                        /* mint-aqua: the lit accent */
+  --cy-rgb: 79, 245, 210;
+  --dim: #6f8a92;
+  --panel: rgba(4, 12, 14, 0.84);
+  --line: rgba(var(--cy-rgb), 0.22);
+  --glow: rgba(var(--cy-rgb), 0.55);
 }
 
 html, body { height: 100%; }
@@ -38,15 +40,23 @@ canvas#c.pointing { cursor: pointer; }
 .hud { position: fixed; inset: 0; pointer-events: none; z-index: 2; }
 .hud > * { pointer-events: auto; }
 
-.corner { position: absolute; width: 30px; height: 30px; border-color: var(--line); border-style: solid; pointer-events: none; }
-.c-tl { top: 10px; left: 10px; border-width: 2px 0 0 2px; }
-.c-tr { top: 10px; right: 10px; border-width: 2px 2px 0 0; }
-.c-bl { bottom: 10px; left: 10px; border-width: 0 0 2px 2px; }
-.c-br { bottom: 10px; right: 10px; border-width: 0 2px 2px 0; }
+/* Framing brackets. Lit rather than drawn: a solid accent edge plus a bloom
+   cast both outward and inward, which is what reads as an illuminated HUD
+   instead of a thin border. */
+.corner {
+  position: absolute; width: 42px; height: 42px;
+  border-color: var(--cy); border-style: solid; pointer-events: none;
+  box-shadow: 0 0 14px -2px var(--glow), inset 0 0 14px -4px var(--glow);
+  opacity: .9;
+}
+.c-tl { top: 10px; left: 10px; border-width: 2px 0 0 2px; border-top-left-radius: 3px; }
+.c-tr { top: 10px; right: 10px; border-width: 2px 2px 0 0; border-top-right-radius: 3px; }
+.c-bl { bottom: 10px; left: 10px; border-width: 0 0 2px 2px; border-bottom-left-radius: 3px; }
+.c-br { bottom: 10px; right: 10px; border-width: 0 2px 2px 0; border-bottom-right-radius: 3px; }
 
 .scanline {
   position: absolute; left: 0; right: 0; height: 1px; pointer-events: none;
-  background: linear-gradient(90deg, transparent, rgba(0,210,255,.16) 50%, transparent);
+  background: linear-gradient(90deg, transparent, rgba(var(--cy-rgb), .16) 50%, transparent);
   animation: scan 6s linear infinite;
 }
 @keyframes scan { from { top: 0 } to { top: 100% } }
@@ -67,7 +77,7 @@ canvas#c.pointing { cursor: pointer; }
   color: #eaf6ff; font: inherit; font-size: 12px; padding: 9px 34px 9px 11px;
   border-radius: 3px; outline: none; backdrop-filter: blur(8px);
 }
-.searchbox:focus { border-color: rgba(0,210,255,.65); box-shadow: 0 0 0 2px rgba(0,210,255,.12); }
+.searchbox:focus { border-color: rgba(var(--cy-rgb), .65); box-shadow: 0 0 0 2px rgba(var(--cy-rgb), .12); }
 .searchbox::placeholder { color: #4d6070; }
 .search-kbd {
   position: absolute; right: 9px; top: 8px; font-size: 9px; color: var(--dim);
@@ -80,11 +90,11 @@ canvas#c.pointing { cursor: pointer; }
 }
 .results.on { display: block; }
 .res {
-  padding: 7px 11px; border-bottom: 1px solid rgba(0,200,255,.08);
+  padding: 7px 11px; border-bottom: 1px solid rgba(var(--cy-rgb), .08);
   cursor: pointer; display: flex; gap: 9px; align-items: baseline;
 }
 .res:last-child { border-bottom: 0; }
-.res:hover, .res.sel { background: rgba(0,210,255,.10); }
+.res:hover, .res.sel { background: rgba(var(--cy-rgb), .10); }
 .res-kind { font-size: 8px; letter-spacing: 1px; color: #05121a; background: var(--cy); padding: 1px 4px; border-radius: 2px; flex: 0 0 auto; }
 .res-kind.tool { background: #ff8866; }
 .res-name { color: #eaf6ff; font-size: 12px; }
@@ -97,7 +107,7 @@ canvas#c.pointing { cursor: pointer; }
   font: inherit; font-size: 9px; letter-spacing: 1.5px; padding: 7px 9px;
   border-radius: 3px; cursor: pointer; backdrop-filter: blur(8px);
 }
-.tbtn:hover { color: var(--cy); border-color: rgba(0,210,255,.5); }
+.tbtn:hover { color: var(--cy); border-color: rgba(var(--cy-rgb), .5); }
 .tbtn.on { color: #05121a; background: var(--cy); border-color: var(--cy); }
 
 /* ── Side panels ────────────────────────────────── */
@@ -107,11 +117,14 @@ canvas#c.pointing { cursor: pointer; }
   overflow-y: auto; overscroll-behavior: contain;
 }
 .p-left  { top: 92px; left: 22px;  width: 250px; max-height: calc(100vh - 190px); }
-.p-right { top: 92px; right: 22px; width: 320px; max-height: calc(100vh - 190px); }
+.p-right { top: 92px; right: 22px; width: 340px; max-height: calc(100vh - 190px); }
+/* Taken down by the SYS / INFO buttons to hand the space back to the graph. */
+.panel.collapsed { display: none; }
 
 .p-title {
   font-size: 9px; letter-spacing: 2.5px; color: var(--cy);
   border-bottom: 1px solid var(--line); padding-bottom: 6px; margin-bottom: 9px;
+  text-shadow: 0 0 10px var(--glow);
 }
 .p-title .muted { color: var(--dim); float: right; letter-spacing: 1px; }
 
@@ -151,9 +164,58 @@ canvas#c.pointing { cursor: pointer; }
   display: inline-block; font-size: 10px; color: #cadbe7; border: 1px solid var(--line);
   border-radius: 2px; padding: 2px 7px; margin: 2px 3px 2px 0; cursor: pointer;
 }
-.chiplink:hover { color: #fff; border-color: rgba(0,210,255,.6); }
+.chiplink:hover { color: #fff; border-color: rgba(var(--cy-rgb), .6); }
 .d-meta { font-size: 10px; color: var(--dim); margin-top: 10px; word-break: break-all; }
-code { background: rgba(0,210,255,.10); padding: 1px 4px; border-radius: 2px; color: #9fe6ff; }
+
+/* ── Detail panel: header, stats, actions, tabs, editors ── */
+.d-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.d-fav {
+  background: none; border: none; color: var(--dim); font-size: 16px;
+  cursor: pointer; line-height: 1; padding: 0 2px;
+}
+.d-fav:hover { color: var(--cy); }
+.d-fav.on { color: var(--cy); text-shadow: 0 0 9px rgba(var(--cy-rgb), .85); }
+
+.d-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin: 10px 0 4px; }
+.d-stat {
+  background: rgba(var(--cy-rgb), .05); border: 1px solid var(--line);
+  border-radius: 3px; padding: 7px 4px; text-align: center;
+}
+.d-stat b {
+  display: block; font-size: 17px; font-weight: 800; color: var(--cy);
+  text-shadow: 0 0 12px rgba(var(--cy-rgb), .5);
+}
+.d-stat span { font-size: 8px; letter-spacing: 1.6px; color: var(--dim); }
+
+.d-acts { display: flex; flex-wrap: wrap; gap: 5px; margin: 10px 0 2px; }
+
+.d-tabs { display: flex; gap: 2px; margin: 12px 0 10px; border-bottom: 1px solid var(--line); }
+.d-tab {
+  background: none; border: none; border-bottom: 2px solid transparent;
+  color: var(--dim); font: inherit; font-size: 9px; letter-spacing: 2px;
+  padding: 6px 9px; cursor: pointer;
+}
+.d-tab:hover { color: #cfe6f3; }
+.d-tab.on { color: var(--cy); border-bottom-color: var(--cy); text-shadow: 0 0 10px rgba(var(--cy-rgb), .6); }
+
+.d-note, .d-input {
+  width: 100%; background: rgba(0,0,0,.45); border: 1px solid var(--line);
+  border-radius: 3px; color: #eaf6ff; font: inherit; font-size: 11.5px;
+  padding: 8px; outline: none; resize: vertical;
+}
+.d-note:focus, .d-input:focus {
+  border-color: rgba(var(--cy-rgb), .65); box-shadow: 0 0 0 2px rgba(var(--cy-rgb), .12);
+}
+.d-note::placeholder, .d-input::placeholder { color: #4d6070; }
+
+.d-table { width: 100%; border-collapse: collapse; font-size: 10.5px; }
+.d-table th, .d-table td {
+  text-align: left; padding: 5px 4px; border-bottom: 1px solid rgba(var(--cy-rgb), .10);
+  vertical-align: top; word-break: break-word;
+}
+.d-table th { color: var(--dim); font-weight: 400; letter-spacing: 1px; width: 44%; }
+.d-table td { color: #cadbe7; }
+code { background: rgba(var(--cy-rgb), .10); padding: 1px 4px; border-radius: 2px; color: #a9f5e2; }
 
 /* Capture */
 .cap-input {
@@ -161,7 +223,7 @@ code { background: rgba(0,210,255,.10); padding: 1px 4px; border-radius: 2px; co
   font: inherit; font-size: 11px; padding: 7px; border-radius: 3px; resize: vertical;
   min-height: 52px; outline: none;
 }
-.cap-input:focus { border-color: rgba(0,210,255,.6); }
+.cap-input:focus { border-color: rgba(var(--cy-rgb), .6); }
 .cap-row { display: flex; gap: 6px; margin-top: 6px; }
 .cap-note { font-size: 10.5px; color: #cadbe7; border-left: 2px solid var(--line); padding: 4px 0 4px 7px; margin-top: 6px; line-height: 1.4; position: relative; }
 .cap-note time { display: block; color: var(--dim); font-size: 9px; margin-top: 2px; }
@@ -180,7 +242,7 @@ code { background: rgba(0,210,255,.10); padding: 1px 4px; border-radius: 2px; co
 
 .toast {
   position: fixed; left: 50%; bottom: 70px; transform: translateX(-50%);
-  background: rgba(0,210,255,.14); border: 1px solid rgba(0,210,255,.5);
+  background: rgba(var(--cy-rgb), .14); border: 1px solid rgba(var(--cy-rgb), .5);
   color: #d9f4ff; font-size: 11px; padding: 8px 14px; border-radius: 3px;
   z-index: 40; opacity: 0; transition: opacity .25s; pointer-events: none;
 }
@@ -194,7 +256,7 @@ code { background: rgba(0,210,255,.10); padding: 1px 4px; border-radius: 2px; co
 .banner code { background: rgba(255,255,255,.12); color: #fff; }
 
 ::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-thumb { background: rgba(0,200,255,.22); border-radius: 3px; }
+::-webkit-scrollbar-thumb { background: rgba(var(--cy-rgb), .22); border-radius: 3px; }
 ::-webkit-scrollbar-track { background: transparent; }
 
 /* ── Narrow screens: panels become toggled sheets ── */
@@ -325,10 +387,12 @@ const edges = DATA
 const adj = new Map(nodes.map((n) => [n.id, []]));
 for (const e of edges) { adj.get(e.s).push(e.t); adj.get(e.t).push(e.s); }
 
-// ── Layout: deterministic clustered sphere ──────────────────────
-// Pillars land on a Fibonacci sphere; each node's children form a smaller
-// sphere around their parent. No physics, no randomness — same every load,
-// which keeps the map memorable instead of rearranging on every visit.
+// ── Layout: deterministic clustered sphere, then relaxed ────────
+// Pillars land on a Fibonacci sphere; each node's children fan outward from
+// their parent. A fixed number of relaxation passes then separates clusters
+// that would otherwise interpenetrate. There is still no randomness anywhere —
+// same input, same graph, every load — so the map stays memorable instead of
+// rearranging on every visit.
 const GOLDEN = Math.PI * (3 - Math.sqrt(5));
 
 function spherePoints(count, radius, seed) {
@@ -342,15 +406,89 @@ function spherePoints(count, radius, seed) {
   return out;
 }
 
+// Fixed-iteration force relaxation. The breadth-first pass gets the topology
+// right but leaves sibling clusters overlapping; repulsion plus edge springs
+// pulls them apart. Every term is a pure function of the seeded positions, so
+// this stays reproducible — it is a refinement of the layout, not a simulation.
+function relax(pillars) {
+  if (nodes.length < 2) return;
+
+  const anchor = new Map(nodes.map((n) => [n.id, n.p.slice()]));
+  const pillarIds = new Set(pillars.map((p) => p.id));
+  const disp = new Map(nodes.map((n) => [n.id, [0, 0, 0]]));
+  const ITERS = 140;
+  const REPEL = 0.0016;
+  const FLOOR = 0.17;        // below this, nodes shove each other apart hard
+
+  for (let it = 0; it < ITERS; it++) {
+    const cool = 1 - it / ITERS;
+    for (const d of disp.values()) { d[0] = 0; d[1] = 0; d[2] = 0; }
+
+    for (let i = 0; i < nodes.length; i++) {
+      for (let j = i + 1; j < nodes.length; j++) {
+        const a = nodes[i], b = nodes[j];
+        let dx = a.p[0] - b.p[0], dy = a.p[1] - b.p[1], dz = a.p[2] - b.p[2];
+        let d2 = dx * dx + dy * dy + dz * dz;
+        if (d2 > 0.81) continue;                 // far enough to ignore
+        if (d2 < 1e-8) { dx = 1e-4; dy = 0; dz = 0; d2 = 1e-8; }
+        const d = Math.sqrt(d2);
+        const f = REPEL / d2 + (d < FLOOR ? (FLOOR - d) * 0.05 : 0);
+        const da = disp.get(a.id), db = disp.get(b.id);
+        da[0] += (dx / d) * f; da[1] += (dy / d) * f; da[2] += (dz / d) * f;
+        db[0] -= (dx / d) * f; db[1] -= (dy / d) * f; db[2] -= (dz / d) * f;
+      }
+    }
+
+    for (const e of edges) {
+      const a = byId.get(e.s), b = byId.get(e.t);
+      const dx = b.p[0] - a.p[0], dy = b.p[1] - a.p[1], dz = b.p[2] - a.p[2];
+      const d = Math.hypot(dx, dy, dz) || 1e-4;
+      const rest = pillarIds.has(e.s) || pillarIds.has(e.t) ? 0.36 : 0.24;
+      const f = (d - rest) * 0.06;
+      const da = disp.get(e.s), db = disp.get(e.t);
+      da[0] += (dx / d) * f; da[1] += (dy / d) * f; da[2] += (dz / d) * f;
+      db[0] -= (dx / d) * f; db[1] -= (dy / d) * f; db[2] -= (dz / d) * f;
+    }
+
+    for (const n of nodes) {
+      const d = disp.get(n.id);
+      // Pillars barely budge: they are the shape of the map, and people
+      // navigate by remembering where each one sits.
+      const w = (pillarIds.has(n.id) ? 0.15 : 1) * cool;
+      n.p[0] += d[0] * w; n.p[1] += d[1] * w; n.p[2] += d[2] * w;
+
+      // A weak tether to the seeded spot preserves cluster identity, so a node
+      // never drifts across the graph into a neighbouring pillar's territory.
+      const a = anchor.get(n.id);
+      const pull = pillarIds.has(n.id) ? 0.05 : 0.012;
+      n.p[0] += (a[0] - n.p[0]) * pull;
+      n.p[1] += (a[1] - n.p[1]) * pull;
+      n.p[2] += (a[2] - n.p[2]) * pull;
+    }
+  }
+
+  // Renormalise back into the roughly-unit volume project() is tuned for.
+  let max = 0;
+  for (const n of nodes) max = Math.max(max, Math.hypot(n.p[0], n.p[1], n.p[2]));
+  if (max > 1e-6) {
+    const k = 0.95 / max;
+    for (const n of nodes) { n.p[0] *= k; n.p[1] *= k; n.p[2] *= k; }
+  }
+}
+
 (function layout() {
   const pillars = nodes.filter((n) => n.kind === 'pillar');
   const centres = spherePoints(pillars.length, 0.62, 0.7);
   pillars.forEach((p, i) => { p.p = centres[i]; });
 
-  // Children are laid out breadth-first from the pillars outwards.
+  // Children are laid out breadth-first from the pillars outwards. Offsets are
+  // biased along the parent's own outward direction: a plain sphere around the
+  // parent sends roughly half of every generation back through the middle of
+  // the graph, which is what made the dense pillars read as one tangled ball.
   const placed = new Set(pillars.map((p) => p.id));
   let frontier = pillars.slice();
-  let radius = 0.30;
+  let radius = 0.34;
+  let depth = 0;
 
   while (frontier.length) {
     const next = [];
@@ -359,24 +497,35 @@ function spherePoints(count, radius, seed) {
         .map((id) => byId.get(id))
         .filter((n) => n && !placed.has(n.id));
       if (!kids.length) continue;
-      const offsets = spherePoints(kids.length, radius, parent.p[0] * 9 + parent.p[2] * 4);
+
+      const len = Math.hypot(parent.p[0], parent.p[1], parent.p[2]) || 1;
+      const out = [parent.p[0] / len, parent.p[1] / len, parent.p[2] / len];
+      // Fan wider when a parent has many children so big clusters stop bunching.
+      const spread = radius * (1 + Math.min(kids.length, 12) * 0.05);
+      const offsets = spherePoints(kids.length, spread, parent.p[0] * 9 + parent.p[2] * 4);
+
       kids.forEach((kid, i) => {
+        const [ox, oy, oz] = offsets[i];
+        const push = spread * (depth === 0 ? 0.85 : 0.55);
         kid.p = [
-          parent.p[0] + offsets[i][0],
-          parent.p[1] + offsets[i][1],
-          parent.p[2] + offsets[i][2],
+          parent.p[0] + ox + out[0] * push,
+          parent.p[1] + oy + out[1] * push,
+          parent.p[2] + oz + out[2] * push,
         ];
         placed.add(kid.id);
         next.push(kid);
       });
     }
     frontier = next;
-    radius *= 0.55;
+    radius *= 0.62;
+    depth++;
   }
 
   // Anything the graph never reached still needs a position.
   const strays = nodes.filter((n) => !n.p);
-  spherePoints(strays.length, 1.0, 2.1).forEach((pt, i) => { strays[i].p = pt; });
+  spherePoints(strays.length, 1.15, 2.1).forEach((pt, i) => { strays[i].p = pt; });
+
+  relax(pillars);
 
   for (const n of nodes) {
     n.sx = 0; n.sy = 0; n.ss = 1; n.sz = 0;
@@ -394,6 +543,44 @@ let W = 0, H = 0, t = 0;
 const cam = { yaw: 0.4, pitch: -0.15, zoom: 1, tYaw: 0.4, tPitch: -0.15, tZoom: 1, auto: true };
 const CAM_HOME = { yaw: 0.4, pitch: -0.15, zoom: 1 };
 
+// ── Stage ───────────────────────────────────────────────────────
+// The panels are opaque and sit on top of a full-bleed canvas, so a graph
+// centred on the raw viewport hides nodes underneath the menus. `stage` is the
+// rectangle actually left over between the panels and the top/bottom bars, and
+// everything projects into its centre. Targets are eased in frame() so opening
+// or closing a panel glides the graph across instead of snapping it.
+const stage = { cx: 0, cy: 0, r: 1, tcx: 0, tcy: 0, tr: 1, ready: false };
+
+// A panel that is display:none reports zero width, which is how the mobile
+// breakpoint and the toggle buttons both hand us their state for free.
+function panelRect(id) {
+  const el = $(id);
+  return el && el.offsetWidth ? el.getBoundingClientRect() : null;
+}
+
+function measureStage() {
+  const GAP = 20;
+  let left = GAP, right = W - GAP;
+  const lp = panelRect('p-left');
+  const rp = panelRect('p-right');
+  if (lp) left = lp.right + GAP;
+  if (rp) right = rp.left - GAP;
+  // On a narrow window the panels can leave no usable middle. Better to let
+  // them overlap a full-width graph than to squeeze it into a sliver.
+  if (right - left < 260) { left = GAP; right = W - GAP; }
+
+  const top = 92;             // clears the search bar
+  const bottom = H - 66;      // clears the status/hint bar
+  stage.tcx = (left + right) / 2;
+  stage.tcy = (top + bottom) / 2;
+  stage.tr = Math.max(140, Math.min(right - left, bottom - top) * 0.5);
+
+  if (!stage.ready) {
+    stage.cx = stage.tcx; stage.cy = stage.tcy; stage.r = stage.tr;
+    stage.ready = true;
+  }
+}
+
 function project(x, y, z) {
   const cy = Math.cos(cam.yaw), sy = Math.sin(cam.yaw);
   const x1 = x * cy + z * sy;
@@ -403,8 +590,8 @@ function project(x, y, z) {
   const z2 = y * sp + z1 * cp;
   const persp = 3;
   const s = persp / (persp - z2 * cam.zoom * 0.85);
-  const R = Math.min(W, H) * 0.33 * cam.zoom;
-  return { x: W / 2 + x1 * R * s, y: H / 2 + y1 * R * s, s, z: z2 };
+  const R = stage.r * 0.86 * cam.zoom;
+  return { x: stage.cx + x1 * R * s, y: stage.cy + y1 * R * s, s, z: z2 };
 }
 
 function resize() {
@@ -412,6 +599,7 @@ function resize() {
   canvas.width = Math.round(W * DPR); canvas.height = Math.round(H * DPR);
   canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  measureStage();
 }
 window.addEventListener('resize', resize);
 resize();
@@ -430,6 +618,10 @@ function rgb(hex) {
 let selected = null;
 let hovered = null;
 let matches = new Set();      // ids matched by the current search
+let isolated = null;          // node id whose neighbourhood is pinned on
+let detailTab = 'info';       // which tab the detail panel is showing
+// Both live up here rather than beside the detail panel code: frame() starts
+// before that section runs, and emphasis() reads `isolated` on the first tick.
 const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 function relatedTo(id) {
@@ -440,7 +632,12 @@ function relatedTo(id) {
 }
 
 function emphasis(node) {
-  // 1 = full, <1 = dimmed. Search wins over selection.
+  // 1 = full, <1 = dimmed. Isolation is an explicit user action, so it wins
+  // over search, which in turn wins over an incidental selection.
+  if (isolated) {
+    const pinned = relatedTo(isolated);
+    if (pinned) return pinned.has(node.id) ? 1 : 0.04;
+  }
   if (matches.size) return matches.has(node.id) ? 1 : 0.12;
   const near = relatedTo(selected && selected.id);
   if (near) return near.has(node.id) ? 1 : 0.2;
@@ -457,11 +654,19 @@ function frame() {
   cam.pitch += (cam.tPitch - cam.pitch) * 0.07;
   cam.zoom += (cam.tZoom - cam.zoom) * 0.07;
 
+  // Glide toward the usable rect when a panel opens or closes.
+  stage.cx += (stage.tcx - stage.cx) * 0.10;
+  stage.cy += (stage.tcy - stage.cy) * 0.10;
+  stage.r += (stage.tr - stage.r) * 0.10;
+
   ctx.fillStyle = '#000';
   ctx.fillRect(0, 0, W, H);
 
-  const glow = ctx.createRadialGradient(W / 2, H / 2, 0, W / 2, H / 2, Math.min(W, H) * 0.5);
-  glow.addColorStop(0, 'rgba(20,40,70,0.5)');
+  // The glow follows the stage so the lit centre stays behind the graph
+  // rather than behind a panel.
+  const glow = ctx.createRadialGradient(stage.cx, stage.cy, 0, stage.cx, stage.cy, stage.r * 1.5);
+  glow.addColorStop(0, 'rgba(14,48,52,0.55)');
+  glow.addColorStop(0.55, 'rgba(8,26,34,0.28)');
   glow.addColorStop(1, 'rgba(0,0,0,0)');
   ctx.fillStyle = glow;
   ctx.fillRect(0, 0, W, H);
@@ -473,13 +678,17 @@ function frame() {
     n.em = emphasis(n);
   }
 
-  // Edges
-  ctx.lineWidth = 0.7;
+  // Edges and node glows are drawn additively, so where light overlaps it
+  // accumulates instead of painting over. That bloom is what separates a lit
+  // graph from a flat one — the diagram reads as energy rather than ink.
+  ctx.globalCompositeOperation = 'lighter';
+
+  ctx.lineWidth = 0.8;
   for (const e of edges) {
     const a = byId.get(e.s), b = byId.get(e.t);
     const em = Math.min(a.em, b.em);
     const depth = (a.sz + b.sz) / 2;
-    const alpha = (0.05 + 0.16 * (depth + 1) / 2) * em;
+    const alpha = (0.07 + 0.24 * (depth + 1) / 2) * em;
     if (alpha < 0.012) continue;
     const [ar, ag, ab] = rgb(a.color);
     const [br, bg, bb] = rgb(b.color);
@@ -499,10 +708,11 @@ function frame() {
     const alpha = Math.min(1, n.em * depthFade * (isActive ? 1.6 : 1));
     if (alpha < 0.02) continue;
     const size = n.r * n.ss * (isActive ? 1.5 : 1);
-    const halo = size * (isActive ? 4 : 2.6);
+    const halo = size * (isActive ? 5 : 3.2);
 
     const gr = ctx.createRadialGradient(n.sx, n.sy, 0, n.sx, n.sy, halo);
-    gr.addColorStop(0, `rgba(${r},${g},${b},${alpha * 0.5})`);
+    gr.addColorStop(0, `rgba(${r},${g},${b},${alpha * 0.62})`);
+    gr.addColorStop(0.45, `rgba(${r},${g},${b},${alpha * 0.16})`);
     gr.addColorStop(1, 'rgba(0,0,0,0)');
     ctx.beginPath(); ctx.arc(n.sx, n.sy, halo, 0, Math.PI * 2);
     ctx.fillStyle = gr; ctx.fill();
@@ -511,11 +721,29 @@ function frame() {
     ctx.fillStyle = `rgba(${r},${g},${b},${alpha})`;
     ctx.fill();
 
-    if (n === selected) {
-      ctx.beginPath(); ctx.arc(n.sx, n.sy, size + 6, 0, Math.PI * 2);
-      ctx.strokeStyle = `rgba(${r},${g},${b},0.85)`;
-      ctx.lineWidth = 1.4; ctx.stroke(); ctx.lineWidth = 0.7;
-    }
+    // A hot white core sells the "emitting light" read at small sizes, where a
+    // flat coloured disc would just look like a dot.
+    ctx.beginPath(); ctx.arc(n.sx, n.sy, size * 0.42, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(255,255,255,${alpha * (isActive ? 0.85 : 0.45)})`;
+    ctx.fill();
+  }
+
+  ctx.globalCompositeOperation = 'source-over';
+
+  // The selection ring sits on top of the bloom, not inside it, so it stays
+  // legible however bright the neighbourhood behind it gets.
+  if (selected && selected.em > 0.02) {
+    const n = selected;
+    const [r, g, b] = rgb(n.color);
+    const size = n.r * n.ss * 1.5;
+    const pulse = reduceMotion ? 0 : Math.sin(t * 2.2) * 2.2;
+    ctx.beginPath(); ctx.arc(n.sx, n.sy, size + 7 + pulse, 0, Math.PI * 2);
+    ctx.strokeStyle = `rgba(${r},${g},${b},0.9)`;
+    ctx.lineWidth = 1.5; ctx.stroke();
+    ctx.beginPath(); ctx.arc(n.sx, n.sy, size + 12 + pulse * 1.6, 0, Math.PI * 2);
+    ctx.strokeStyle = `rgba(${r},${g},${b},0.22)`;
+    ctx.lineWidth = 1; ctx.stroke();
+    ctx.lineWidth = 0.8;
   }
 
   // Labels: pillars always; others when active, matched, or adjacent to selection.
@@ -647,6 +875,8 @@ function select(node, opts) {
 
 function clearSelection() {
   selected = null;
+  isolated = null;
+  detailTab = 'info';
   stSel.textContent = 'NO SELECTION';
   detailEl.innerHTML =
     '<div class="d-empty">Click any node in the graph, or search above.</div>';
@@ -656,62 +886,311 @@ function toolsFor(nodeId) {
   return DATA.tools.filter((tool) => tool.node === nodeId);
 }
 
+// ── Per-node workspace data ─────────────────────────────────────
+// Notes, tags and flags the user attaches to a node. Deliberately stored under
+// its own key rather than inside the graph: brain-data.js is regenerated from
+// the vault, so anything merged into it would be destroyed on the next build.
+let userData = null;
+function allNodeData() {
+  if (userData === null) {
+    const raw = store.read('zero.nodes', {});
+    userData = raw && typeof raw === 'object' ? raw : {};
+  }
+  return userData;
+}
+
+function nodeData(id) {
+  const d = allNodeData()[id];
+  return {
+    note: d && typeof d.note === 'string' ? d.note : '',
+    tags: d && Array.isArray(d.tags) ? d.tags : [],
+    fav: !!(d && d.fav),
+    status: d && typeof d.status === 'string' ? d.status : '',
+  };
+}
+
+function saveNodeData(id, patch) {
+  const all = allNodeData();
+  const next = Object.assign(nodeData(id), patch);
+  // Drop empty records so the store stays small and exports stay clean.
+  if (!next.note && !next.tags.length && !next.fav && !next.status) delete all[id];
+  else all[id] = next;
+  store.write('zero.nodes', all);
+}
+
+const STATUSES = ['', 'learning', 'active', 'mastered', 'parked'];
+
+// Hops from the nearest pillar. Computed once; surfaced in the DATA tab and
+// used to explain where a node sits in the hierarchy.
+const depthFromPillar = (() => {
+  const depth = new Map();
+  const queue = [];
+  for (const n of nodes) {
+    if (n.kind === 'pillar') { depth.set(n.id, 0); queue.push(n.id); }
+  }
+  for (let i = 0; i < queue.length; i++) {
+    for (const nb of adj.get(queue[i]) || []) {
+      if (!depth.has(nb)) { depth.set(nb, depth.get(queue[i]) + 1); queue.push(nb); }
+    }
+  }
+  return depth;
+})();
+
+function nodeMarkdown(n) {
+  const d = nodeData(n.id);
+  const tools = n.kind === 'subcategory' ? toolsFor(n.id) : [];
+  const nb = (adj.get(n.id) || []).map((id) => byId.get(id)).filter(Boolean);
+  const out = [`# ${n.label}`, ''];
+  out.push(`- kind: ${n.kind}`);
+  if (n.pillar) out.push(`- pillar: ${n.pillar}`);
+  if (n.invoke) out.push(`- invoke: \`${n.invoke}\``);
+  if (n.path) out.push(`- source: ${DATA.repo}/blob/master/${n.path}`);
+  if (d.status) out.push(`- status: ${d.status}`);
+  if (d.tags.length) out.push(`- tags: ${d.tags.map((t) => '#' + t).join(' ')}`);
+  out.push('');
+  if (n.detail) out.push(n.detail, '');
+  if (n.sections && n.sections.length) out.push('## Contents', ...n.sections.map((s) => `- ${s}`), '');
+  if (tools.length) {
+    out.push('## Tools', ...tools.map((t) =>
+      `- [${t.name}](${t.url})` + (t.desc ? ` — ${t.desc}` : '')), '');
+  }
+  if (nb.length) out.push('## Connected', ...nb.map((x) => `- [[${x.label}]]`), '');
+  if (d.note) out.push('## Notes', d.note, '');
+  return out.join('\n');
+}
+
+function statTile(label, value) {
+  return `<div class="d-stat"><b>${escapeHtml(String(value))}</b><span>${escapeHtml(label)}</span></div>`;
+}
+
 function renderDetail(n) {
+  if (!n) return;
+  const d = nodeData(n.id);
+  const neighbours = (adj.get(n.id) || []).map((id) => byId.get(id)).filter(Boolean);
+  const tools = n.kind === 'subcategory' ? toolsFor(n.id) : [];
   const parts = [];
+
   parts.push(
+    '<div class="d-head">',
     `<span class="d-kind" style="background:${escapeHtml(n.color)}">${escapeHtml(n.kind)}</span>`,
-    `<div class="d-name">${escapeHtml(n.label)}</div>`,
-    `<div class="d-desc">${escapeHtml(n.detail || '')}</div>`
+    `<button class="d-fav${d.fav ? ' on' : ''}" data-act="fav" type="button" ` +
+    `title="Pin this node" aria-pressed="${d.fav}">${d.fav ? '★' : '☆'}</button>`,
+    '</div>',
+    `<div class="d-name">${escapeHtml(n.label)}</div>`
   );
 
-  if (n.kind === 'skill') {
-    parts.push(`<div class="d-meta">Invoke <code>${escapeHtml(n.invoke)}</code></div>`);
-    if (n.sections && n.sections.length) {
-      parts.push('<div class="d-sec">WHAT IS INSIDE</div><ul class="d-list">');
-      parts.push(n.sections.map((s) => `<li>› ${escapeHtml(s)}</li>`).join(''));
-      parts.push('</ul>');
+  parts.push(
+    '<div class="d-stats">',
+    statTile('LINKS', neighbours.length),
+    statTile('TOOLS', tools.length),
+    statTile('DEPTH', depthFromPillar.has(n.id) ? depthFromPillar.get(n.id) : '–'),
+    '</div>'
+  );
+
+  parts.push(
+    '<div class="d-acts">',
+    '<button class="tbtn" data-act="focus" type="button" title="Centre the camera">FOCUS</button>',
+    `<button class="tbtn${isolated === n.id ? ' on' : ''}" data-act="isolate" type="button" ` +
+    'title="Dim everything except this neighbourhood">ISOLATE</button>',
+    '<button class="tbtn" data-act="link" type="button" title="Copy a deep link">LINK</button>',
+    n.invoke ? '<button class="tbtn" data-act="invoke" type="button" title="Copy the invoke command">INVOKE</button>' : '',
+    '<button class="tbtn" data-act="md" type="button" title="Download as Markdown">.MD</button>',
+    '</div>'
+  );
+
+  parts.push('<div class="d-tabs">');
+  for (const [key, label] of [['info', 'INFO'], ['notes', 'NOTES'], ['data', 'DATA']]) {
+    const badge = key === 'notes' && (d.note || d.tags.length) ? ' •' : '';
+    parts.push(
+      `<button class="d-tab${detailTab === key ? ' on' : ''}" data-tab="${key}" type="button">` +
+      `${label}${badge}</button>`
+    );
+  }
+  parts.push('</div>');
+
+  if (detailTab === 'info') {
+    parts.push(`<div class="d-desc">${escapeHtml(n.detail || 'No description.')}</div>`);
+
+    if (n.kind === 'skill') {
+      parts.push(`<div class="d-meta">Invoke <code>${escapeHtml(n.invoke)}</code></div>`);
+      if (n.sections && n.sections.length) {
+        parts.push('<div class="d-sec">WHAT IS INSIDE</div><ul class="d-list">');
+        parts.push(n.sections.map((s) => `<li>› ${escapeHtml(s)}</li>`).join(''));
+        parts.push('</ul>');
+      }
+      if (n.links && n.links.length) {
+        parts.push('<div class="d-sec">EXTERNAL REFERENCES</div><ul class="d-list">');
+        parts.push(n.links.map((u) =>
+          `<li><a href="${escapeHtml(u)}" target="_blank" rel="noopener">${escapeHtml(u)}</a></li>`
+        ).join(''));
+        parts.push('</ul>');
+      }
+      parts.push(
+        '<div class="d-sec">SOURCE</div>',
+        `<ul class="d-list"><li><a href="${escapeHtml(DATA.repo)}/blob/master/${escapeHtml(n.path)}" ` +
+        `target="_blank" rel="noopener">${escapeHtml(n.path)}</a></li></ul>`
+      );
     }
-    if (n.links && n.links.length) {
-      parts.push('<div class="d-sec">EXTERNAL REFERENCES</div><ul class="d-list">');
-      parts.push(n.links.map((u) =>
-        `<li><a href="${escapeHtml(u)}" target="_blank" rel="noopener">${escapeHtml(u)}</a></li>`
+
+    if (tools.length) {
+      parts.push(`<div class="d-sec">TOOLS · ${tools.length}</div><ul class="d-list">`);
+      parts.push(tools.map((tool) =>
+        `<li><a href="${escapeHtml(tool.url)}" target="_blank" rel="noopener">${escapeHtml(tool.name)}</a>` +
+        (tool.desc ? ` — ${escapeHtml(tool.desc)}` : '') + '</li>'
       ).join(''));
       parts.push('</ul>');
     }
+
+    if (neighbours.length) {
+      parts.push(`<div class="d-sec">CONNECTED · ${neighbours.length}</div><div>`);
+      parts.push(neighbours.map((nb) =>
+        `<span class="chiplink" data-goto="${escapeHtml(nb.id)}">${escapeHtml(nb.label)}</span>`
+      ).join(''));
+      parts.push('</div>');
+    }
+  } else if (detailTab === 'notes') {
     parts.push(
-      '<div class="d-sec">SOURCE</div>',
-      `<ul class="d-list"><li><a href="${escapeHtml(DATA.repo)}/blob/master/${escapeHtml(n.path)}" ` +
-      `target="_blank" rel="noopener">${escapeHtml(n.path)}</a></li></ul>`
+      '<div class="d-sec">YOUR NOTE</div>',
+      `<textarea class="d-note" id="d-note" rows="7" placeholder="Write anything about ${escapeHtml(n.label)}…">${escapeHtml(d.note)}</textarea>`,
+      '<div class="d-sec">TAGS</div>',
+      `<input class="d-input" id="d-tags" type="text" spellcheck="false" placeholder="comma, separated, tags" value="${escapeHtml(d.tags.join(', '))}">`,
+      '<div class="d-sec">STATUS</div>',
+      '<div class="d-acts">'
     );
-  }
+    for (const s of STATUSES) {
+      parts.push(
+        `<button class="tbtn${d.status === s ? ' on' : ''}" data-status="${escapeHtml(s)}" ` +
+        `type="button">${escapeHtml(s ? s.toUpperCase() : 'NONE')}</button>`
+      );
+    }
+    parts.push('</div>', '<div class="d-meta">Saved to this browser as you type.</div>');
+  } else {
+    const rows = [
+      ['id', n.id],
+      ['kind', n.kind],
+      ['pillar', n.pillar || '—'],
+      ['connections', neighbours.length],
+      ['tools', tools.length],
+      ['depth from pillar', depthFromPillar.has(n.id) ? depthFromPillar.get(n.id) : '—'],
+      ['sections', (n.sections || []).length],
+      ['external links', (n.links || []).length],
+      ['invoke', n.invoke || '—'],
+      ['source path', n.path || '—'],
+      ['colour', n.color],
+      ['status', d.status || '—'],
+      ['tags', d.tags.length ? d.tags.join(', ') : '—'],
+      ['note', d.note ? `${d.note.length} chars` : '—'],
+    ];
+    parts.push('<table class="d-table">');
+    for (const [k, v] of rows) {
+      parts.push(`<tr><th>${escapeHtml(k)}</th><td>${escapeHtml(String(v))}</td></tr>`);
+    }
+    parts.push('</table>');
 
-  const tools = n.kind === 'subcategory' ? toolsFor(n.id) : [];
-  if (tools.length) {
-    parts.push(`<div class="d-sec">TOOLS · ${tools.length}</div><ul class="d-list">`);
-    parts.push(tools.map((tool) =>
-      `<li><a href="${escapeHtml(tool.url)}" target="_blank" rel="noopener">${escapeHtml(tool.name)}</a>` +
-      (tool.desc ? ` — ${escapeHtml(tool.desc)}` : '') + '</li>'
-    ).join(''));
-    parts.push('</ul>');
-  }
-
-  const neighbours = (adj.get(n.id) || []).map((id) => byId.get(id)).filter(Boolean);
-  if (neighbours.length) {
-    parts.push(`<div class="d-sec">CONNECTED · ${neighbours.length}</div><div>`);
-    parts.push(neighbours.map((nb) =>
-      `<span class="chiplink" data-goto="${escapeHtml(nb.id)}">${escapeHtml(nb.label)}</span>`
-    ).join(''));
-    parts.push('</div>');
+    const byKind = {};
+    for (const nb of neighbours) byKind[nb.kind] = (byKind[nb.kind] || 0) + 1;
+    const kinds = Object.keys(byKind);
+    if (kinds.length) {
+      parts.push('<div class="d-sec">NEIGHBOURS BY KIND</div><div>');
+      parts.push(kinds.map((k) =>
+        `<span class="chiplink" data-nofocus="1">${escapeHtml(k)} · ${byKind[k]}</span>`
+      ).join(''));
+      parts.push('</div>');
+    }
   }
 
   detailEl.innerHTML = parts.join('');
 }
 
+function download(name, text, type) {
+  const url = URL.createObjectURL(new Blob([text], { type: type || 'text/plain' }));
+  const a = document.createElement('a');
+  a.href = url; a.download = name;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function copyText(text, label) {
+  const done = () => toast(label + ' copied');
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(done, () => toast('Copy blocked by the browser'));
+  } else {
+    // file:// and older browsers have no async clipboard.
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); done(); } catch (_) { toast('Copy blocked by the browser'); }
+    ta.remove();
+  }
+}
+
 detailEl.addEventListener('click', (e) => {
-  const chip = e.target.closest('[data-goto]');
-  if (!chip) return;
-  const node = byId.get(chip.getAttribute('data-goto'));
-  if (node) select(node);
+  const goto = e.target.closest('[data-goto]');
+  if (goto) {
+    const node = byId.get(goto.getAttribute('data-goto'));
+    if (node) select(node);
+    return;
+  }
+
+  const tab = e.target.closest('[data-tab]');
+  if (tab) {
+    detailTab = tab.getAttribute('data-tab');
+    renderDetail(selected);
+    return;
+  }
+
+  const statusBtn = e.target.closest('[data-status]');
+  if (statusBtn && selected) {
+    const next = statusBtn.getAttribute('data-status');
+    saveNodeData(selected.id, { status: nodeData(selected.id).status === next ? '' : next });
+    renderDetail(selected);
+    return;
+  }
+
+  const act = e.target.closest('[data-act]');
+  if (!act || !selected) return;
+  const n = selected;
+
+  switch (act.getAttribute('data-act')) {
+    case 'fav':
+      saveNodeData(n.id, { fav: !nodeData(n.id).fav });
+      renderDetail(n);
+      break;
+    case 'focus':
+      focusOn(n);
+      break;
+    case 'isolate':
+      isolated = isolated === n.id ? null : n.id;
+      renderDetail(n);
+      toast(isolated ? 'Isolated · press ESC to clear' : 'Isolation cleared');
+      break;
+    case 'link':
+      copyText(location.origin + location.pathname + '#node=' + encodeURIComponent(n.id), 'Link');
+      break;
+    case 'invoke':
+      copyText(n.invoke, 'Command');
+      break;
+    case 'md':
+      download(slugForFile(n.label) + '.md', nodeMarkdown(n), 'text/markdown');
+      toast('Exported ' + n.label);
+      break;
+  }
+});
+
+function slugForFile(label) {
+  return label.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'node';
+}
+
+// Typing must not re-render, or the caret jumps to the end on every keystroke.
+detailEl.addEventListener('input', (e) => {
+  if (!selected) return;
+  if (e.target.id === 'd-note') {
+    saveNodeData(selected.id, { note: e.target.value });
+  } else if (e.target.id === 'd-tags') {
+    const tags = e.target.value.split(',').map((s) => s.trim()).filter(Boolean);
+    saveNodeData(selected.id, { tags });
+  }
 });
 
 // ── Search ──────────────────────────────────────────────────────
@@ -984,24 +1463,44 @@ function toast(message) {
   toastTimer = setTimeout(() => el.classList.remove('on'), 1900);
 }
 
-// ── Panel toggles (mobile) + reset ──────────────────────────────
-function openPanel(side) {
-  const panel = side === 'left' ? $('p-left') : $('p-right');
-  const other = side === 'left' ? $('p-right') : $('p-left');
-  other.classList.remove('open');
-  panel.classList.add('open');
-  $('btn-left').classList.toggle('on', side === 'left');
-  $('btn-right').classList.toggle('on', side === 'right');
-}
-function togglePanel(side) {
-  const panel = side === 'left' ? $('p-left') : $('p-right');
-  if (panel.classList.contains('open')) {
-    panel.classList.remove('open');
-    $(side === 'left' ? 'btn-left' : 'btn-right').classList.remove('on');
+// ── Panel toggles + reset ───────────────────────────────────────
+// Two regimes share one API. Narrow windows only have room for one panel at a
+// time, so there `.open` reveals and opening one closes the other. On desktop
+// both panels are up by default and `.collapsed` takes one down — which is what
+// makes SYS/INFO useful for reclaiming graph space instead of being mobile-only.
+const isNarrow = () => window.innerWidth <= 900;
+const panelEl = (side) => (side === 'left' ? $('p-left') : $('p-right'));
+const panelBtn = (side) => (side === 'left' ? $('btn-left') : $('btn-right'));
+const panelIsOpen = (side) => panelEl(side).offsetWidth > 0;
+
+function setPanel(side, open) {
+  const panel = panelEl(side);
+  if (isNarrow()) {
+    panel.classList.remove('collapsed');
+    panel.classList.toggle('open', open);
+    if (open) {
+      const other = side === 'left' ? 'right' : 'left';
+      panelEl(other).classList.remove('open');
+      panelBtn(other).classList.remove('on');
+    }
   } else {
-    openPanel(side);
+    panel.classList.remove('open');
+    panel.classList.toggle('collapsed', !open);
+  }
+  panelBtn(side).classList.toggle('on', open);
+  measureStage();          // reads layout back, so the graph re-centres at once
+}
+
+function openPanel(side) { setPanel(side, true); }
+function togglePanel(side) { setPanel(side, !panelIsOpen(side)); }
+
+// Buttons reflect whatever the current breakpoint actually shows.
+function syncPanelButtons() {
+  for (const side of ['left', 'right']) {
+    panelBtn(side).classList.toggle('on', panelIsOpen(side));
   }
 }
+window.addEventListener('resize', syncPanelButtons);
 $('btn-left').addEventListener('click', () => togglePanel('left'));
 $('btn-right').addEventListener('click', () => togglePanel('right'));
 
