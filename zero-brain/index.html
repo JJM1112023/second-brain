@@ -673,7 +673,7 @@ function relax(pillars) {
 // ── Canvas + camera ─────────────────────────────────────────────
 const canvas = $('c');
 const ctx = canvas.getContext('2d');
-const DPR = Math.min(window.devicePixelRatio || 1, 2);
+let DPR = Math.min(window.devicePixelRatio || 1, 2);
 let W = 0, H = 0, t = 0;
 
 const cam = { yaw: 0.4, pitch: -0.15, zoom: 1, tYaw: 0.4, tPitch: -0.15, tZoom: 1, auto: true };
@@ -731,6 +731,9 @@ function project(x, y, z) {
 }
 
 function resize() {
+  // devicePixelRatio changes with browser zoom and monitor moves; resize fires
+  // for both, so re-sampling here keeps the canvas sharp instead of blurry.
+  DPR = Math.min(window.devicePixelRatio || 1, 2);
   W = window.innerWidth; H = window.innerHeight;
   canvas.width = Math.round(W * DPR); canvas.height = Math.round(H * DPR);
   canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
@@ -758,7 +761,11 @@ let isolated = null;          // node id whose neighbourhood is pinned on
 let detailTab = 'info';       // which tab the detail panel is showing
 // Both live up here rather than beside the detail panel code: frame() starts
 // before that section runs, and emphasis() reads `isolated` on the first tick.
-const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+let reduceMotion = motionQuery.matches;
+if (motionQuery.addEventListener) {
+  motionQuery.addEventListener('change', (e) => { reduceMotion = e.matches; });
+}
 
 function relatedTo(id) {
   if (!id) return null;
@@ -909,7 +916,10 @@ if (DATA) frame();
 
 // ── Hit testing ─────────────────────────────────────────────────
 function nodeAt(px, py) {
-  let best = null, bestD = 22;
+  // Nearest node whose own hit radius contains the point. No global distance
+  // cap: a zoomed pillar draws well past 22px, and clicks on its visible body
+  // must land.
+  let best = null, bestD = Infinity;
   for (const n of nodes) {
     if (n.em < 0.2) continue;
     const d = Math.hypot(n.sx - px, n.sy - py);
@@ -924,13 +934,26 @@ const pointers = new Map();
 let dragging = false, moved = 0, lastX = 0, lastY = 0, lastPinch = 0;
 
 canvas.addEventListener('pointerdown', (e) => {
-  canvas.setPointerCapture(e.pointerId);
+  // Right/middle click is the context menu or paste, not a drag — letting it
+  // in would also make its release select or clear the selection.
+  if (e.pointerType === 'mouse' && e.button !== 0) return;
+  // Capture can throw if the pointer is already gone by the time the handler
+  // runs (fast taps); an uncaught throw here would abort gesture tracking and
+  // leave the pointer map inconsistent.
+  try { canvas.setPointerCapture(e.pointerId); } catch (_) { /* pointer already released */ }
   pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
   if (pointers.size === 1) {
     dragging = true; moved = 0; lastX = e.clientX; lastY = e.clientY;
     canvas.classList.add('dragging');
     cam.auto = false;
   } else if (pointers.size === 2) {
+    // A gesture that became a pinch can never be a tap again, and its drag
+    // anchor is dead: without this, lifting one finger rotated the camera by
+    // the whole inter-finger distance, and lifting both selected whatever
+    // node sat under the second finger (or cleared the selection).
+    dragging = false;
+    moved = 1e9;
+    canvas.classList.remove('dragging');
     const [a, b] = [...pointers.values()];
     lastPinch = Math.hypot(a.x - b.x, a.y - b.y);
   }
@@ -964,6 +987,15 @@ function endPointer(e) {
   const wasDragging = dragging && pointers.size === 1;
   pointers.delete(e.pointerId);
   if (pointers.size < 2) lastPinch = 0;
+  if (pointers.size === 1) {
+    // Pinch tail: hand control back to the surviving finger, anchored where
+    // that finger actually is. `moved` stays huge, so the eventual release
+    // can still never read as a tap.
+    const [p] = pointers.values();
+    lastX = p.x; lastY = p.y;
+    dragging = true;
+    canvas.classList.add('dragging');
+  }
   if (!pointers.size) {
     dragging = false;
     canvas.classList.remove('dragging');
@@ -994,14 +1026,25 @@ function escapeHtml(s) {
 }
 
 function focusOn(node) {
+  // Inverting project(): x1 = x·cosY + z·sinY must be 0 with the node on the
+  // near side (z2 > 0), which needs yaw = atan2(-x, z); then z1 = |(x,z)| and
+  // y1 = y·cosP - z1·sinP = 0 needs pitch = +atan2(y, |(x,z)|). Flipping
+  // either sign swings the camera away from the node instead of onto it.
   const [x, y, z] = node.p;
-  cam.tYaw = Math.atan2(x, z);
-  cam.tPitch = Math.max(-1.3, Math.min(1.3, -Math.atan2(y, Math.hypot(x, z))));
+  cam.tYaw = Math.atan2(-x, z);
+  cam.tPitch = Math.max(-1.3, Math.min(1.3, Math.atan2(y, Math.hypot(x, z))));
   cam.tZoom = clampZoom(node.kind === 'pillar' ? 1.35 : 1.9);
   cam.auto = false;
 }
 
 function select(node, opts) {
+  // A stale isolation pin would render the new selection at 4% emphasis —
+  // nearly invisible, with the control that caused it shown as off. Keep the
+  // pin only when navigating within its own neighbourhood.
+  if (isolated && isolated !== node.id) {
+    const pinned = relatedTo(isolated);
+    if (!pinned || !pinned.has(node.id)) isolated = null;
+  }
   selected = node;
   focusOn(node);
   renderDetail(node);
@@ -1030,7 +1073,9 @@ let userData = null;
 function allNodeData() {
   if (userData === null) {
     const raw = store.read('zero.nodes', {});
-    userData = raw && typeof raw === 'object' ? raw : {};
+    // Arrays pass typeof 'object' but JSON.stringify drops their string keys,
+    // so an array-shaped record would silently eat every subsequent save.
+    userData = raw && typeof raw === 'object' && !Array.isArray(raw) ? raw : {};
   }
   return userData;
 }
@@ -1239,11 +1284,16 @@ function renderDetail(n) {
 }
 
 function download(name, text, type) {
+  // The anchor must be in the document and the blob URL must outlive the
+  // click — fetching a blob: URL is asynchronous, and a synchronous revoke
+  // can abort the download before it starts.
   const url = URL.createObjectURL(new Blob([text], { type: type || 'text/plain' }));
   const a = document.createElement('a');
   a.href = url; a.download = name;
+  document.body.appendChild(a);
   a.click();
-  URL.revokeObjectURL(url);
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 function copyText(text, label) {
@@ -1278,12 +1328,17 @@ detailEl.addEventListener('click', (e) => {
 
   const statusBtn = e.target.closest('[data-status]');
   if (statusBtn && selected) {
+    // Clicking the active status (or NONE) clears it; NONE while nothing is
+    // set is a no-op — logging it would put fabricated entries in the trail.
+    const current = nodeData(selected.id).status;
     const next = statusBtn.getAttribute('data-status');
-    const cleared = nodeData(selected.id).status === next;
-    saveNodeData(selected.id, { status: cleared ? '' : next });
-    logEvent('status', cleared
-      ? `Cleared status on ${selected.label}`
-      : `${selected.label} → ${next}`);
+    const target = current === next ? '' : next;
+    if (current !== target) {
+      saveNodeData(selected.id, { status: target });
+      logEvent('status', target
+        ? `${selected.label} → ${target}`
+        : `Cleared status on ${selected.label}`);
+    }
     renderDetail(selected);
     return;
   }
@@ -1409,21 +1464,37 @@ function runSearch(raw) {
 function openResult(row) {
   if (!row) return;
   if (row.kind === 'tool' && row.url) {
+    // Keep the dropdown for tools — opening one link often leads to the next.
     window.open(row.url, '_blank', 'noopener');
     return;
   }
   const node = byId.get(row.nodeId);
-  if (node) select(node);
+  if (node) {
+    select(node);
+    // The search has done its job; leaving it active would keep the dropdown
+    // over the graph and the rest of the nodes dimmed by stale matches.
+    qEl.value = '';
+    runSearch('');
+    qEl.blur();
+  }
 }
 
 qEl.addEventListener('input', () => runSearch(qEl.value));
 
 qEl.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') { qEl.value = ''; runSearch(''); qEl.blur(); return; }
+  if (e.key === 'Escape') {
+    // Dismiss the search only. Without stopPropagation the same event reaches
+    // the document handler, which — because blur() has already moved focus to
+    // BODY — would also clear the selection and isolation in one keypress.
+    e.stopPropagation();
+    qEl.value = ''; runSearch(''); qEl.blur();
+    return;
+  }
   if (!resultRows.length) return;
   if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
     e.preventDefault();
-    resultCursor = (resultCursor + (e.key === 'ArrowDown' ? 1 : -1) + resultRows.length) % resultRows.length;
+    if (resultCursor === -1) resultCursor = e.key === 'ArrowDown' ? 0 : resultRows.length - 1;
+    else resultCursor = (resultCursor + (e.key === 'ArrowDown' ? 1 : -1) + resultRows.length) % resultRows.length;
     [...resultsEl.children].forEach((el, i) => el.classList.toggle('sel', i === resultCursor));
     const active = resultsEl.children[resultCursor];
     if (active) active.scrollIntoView({ block: 'nearest' });
@@ -1440,8 +1511,12 @@ resultsEl.addEventListener('click', (e) => {
 
 document.addEventListener('keydown', (e) => {
   const typing = /^(INPUT|TEXTAREA)$/.test(document.activeElement.tagName);
-  if (e.key === '/' && !typing) { e.preventDefault(); qEl.focus(); qEl.select(); }
-  else if ((e.key === 'm' || e.key === 'M') && !typing) { setMC(!mcOpen); }
+  const mod = e.metaKey || e.ctrlKey || e.altKey;
+  // '/' must not run under mission control: it would focus the search box
+  // hidden beneath the overlay, and every later keystroke — including the M
+  // to leave — would type into an input nobody can see.
+  if (e.key === '/' && !typing && !mod && !mcOpen) { e.preventDefault(); qEl.focus(); qEl.select(); }
+  else if ((e.key === 'm' || e.key === 'M') && !typing && !mod) { setMC(!mcOpen); }
   else if (e.key === 'Escape' && !typing) {
     // Mission control is the top layer, so ESC dismisses it before it starts
     // tearing down the graph's search and selection underneath.
@@ -1475,6 +1550,7 @@ if (DATA) {
 }
 
 // ── Persistence ─────────────────────────────────────────────────
+let storeWarned = false;
 const store = {
   read(key, fallback) {
     try {
@@ -1483,7 +1559,18 @@ const store = {
     } catch (_) { return fallback; }
   },
   write(key, value) {
-    try { localStorage.setItem(key, JSON.stringify(value)); } catch (_) { /* private mode */ }
+    try {
+      localStorage.setItem(key, JSON.stringify(value));
+      return true;
+    } catch (_) {
+      // Quota or private mode. Warn once — the UI otherwise confirms saves
+      // that never happened, and the user finds out on the next reload.
+      if (!storeWarned) {
+        storeWarned = true;
+        toast('Storage unavailable — changes will not survive a reload');
+      }
+      return false;
+    }
   },
 };
 
@@ -1493,7 +1580,9 @@ let roadDone = store.read('zero.roadmap', null);
 
 function renderRoadmap() {
   if (!DATA) return;
-  if (!roadDone || typeof roadDone !== 'object') {
+  // An array would pass typeof 'object', but its string-keyed ticks are
+  // dropped by JSON.stringify — every tick would silently stop persisting.
+  if (!roadDone || typeof roadDone !== 'object' || Array.isArray(roadDone)) {
     roadDone = {};
     for (const phase of DATA.roadmap) roadDone[phase.id] = phase.done;
   }
@@ -1519,6 +1608,10 @@ roadmapEl.addEventListener('click', (e) => {
   roadDone[id] = !roadDone[id];
   store.write('zero.roadmap', roadDone);
   renderRoadmap();
+  // Same action as the mission-control tick, so it earns the same trail
+  // entry — the audit trail promises to show every mission ticked.
+  const label = (DATA.roadmap.find((p) => p.id === id) || {}).label || id;
+  logEvent('roadmap', (roadDone[id] ? 'Completed: ' : 'Reopened: ') + label);
 });
 renderRoadmap();
 
@@ -1526,7 +1619,11 @@ renderRoadmap();
 const capList = $('cap-list');
 const capInput = $('cap-input');
 let captures = store.read('zero.captures', []);
-if (!Array.isArray(captures)) captures = [];
+// One malformed element would crash renderCaptures() during startup and take
+// every later listener registration down with it — drop bad records instead.
+captures = Array.isArray(captures)
+  ? captures.filter((n) => n && typeof n.text === 'string' && Number.isFinite(n.at))
+  : [];
 
 function renderCaptures() {
   $('cap-count').textContent = captures.length ? String(captures.length) : '';
@@ -1659,6 +1756,7 @@ function syncPanelButtons() {
   }
 }
 window.addEventListener('resize', syncPanelButtons);
+syncPanelButtons();   // both panels start open on desktop; the buttons should say so
 $('btn-left').addEventListener('click', () => togglePanel('left'));
 $('btn-right').addEventListener('click', () => togglePanel('right'));
 
@@ -1768,7 +1866,9 @@ if ('serviceWorker' in navigator) {
 // synthesised, so an empty trail honestly means "you have not done anything
 // yet" rather than showing invented activity.
 let events = store.read('zero.events', []);
-if (!Array.isArray(events)) events = [];
+events = Array.isArray(events)
+  ? events.filter((ev) => ev && typeof ev.text === 'string' && Number.isFinite(ev.at))
+  : [];
 
 function logEvent(kind, text) {
   events.unshift({ kind, text, at: Date.now() });
@@ -1795,10 +1895,12 @@ function roadStats() {
   return { total, done, pct: total ? Math.round((done / total) * 100) : 0 };
 }
 
-// Everything the user has actually written, across all nodes.
+// Everything the user has actually written, across all nodes. Records whose
+// node vanished in a vault regeneration are kept in storage (the node may
+// come back) but must not inflate the live statistics.
 function workspaceStats() {
   const all = allNodeData();
-  const ids = Object.keys(all);
+  const ids = Object.keys(all).filter((id) => byId.has(id));
   let notes = 0, pinned = 0;
   const tags = new Set();
   const statuses = {};
@@ -1821,6 +1923,7 @@ function card(title, meta, inner) {
 }
 
 function renderStrip() {
+  if (!DATA) return;   // called on a timer, so it must tolerate a failed data load
   const road = roadStats();
   const ws = workspaceStats();
   const now = new Date();
@@ -1899,6 +2002,20 @@ function viewActivity() {
   return card('AUDIT TRAIL', `${events.length} events`, `<div class="mc-feed">${rows}</div>`);
 }
 
+// What THIS console has written, measured directly. navigator.storage.estimate
+// is origin-wide (dominated by the service-worker caches), so it gets its own
+// honestly-labelled row instead of masquerading as "local storage".
+function localStorageBytes() {
+  try {
+    let chars = 0;
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      chars += k.length + (localStorage.getItem(k) || '').length;
+    }
+    return (chars * 2 / 1024).toFixed(1) + ' KB';   // UTF-16: 2 bytes per unit
+  } catch (_) { return 'unavailable'; }
+}
+
 function viewVitals() {
   const ws = workspaceStats();
   const rows = [
@@ -1916,7 +2033,8 @@ function viewVitals() {
     ['connection', navigator.onLine ? 'online' : 'offline'],
     ['cpu threads', navigator.hardwareConcurrency || 'unavailable'],
     ['device memory', navigator.deviceMemory ? navigator.deviceMemory + ' GB' : 'unavailable'],
-    ['local storage used', vitals && vitals.usage != null ? vitals.usage : 'measuring…'],
+    ['console data (localStorage)', localStorageBytes()],
+    ['origin storage incl. caches', vitals && vitals.usage != null ? vitals.usage : 'measuring…'],
   ];
   const table = '<table class="d-table">' + rows.map(([k, v]) =>
     `<tr><th>${escapeHtml(k)}</th><td>${escapeHtml(String(v))}</td></tr>`).join('') + '</table>';
@@ -1963,15 +2081,24 @@ const MC_VIEWS = {
 function renderMC() {
   if (!DATA) return;
   renderStrip();
+  // Repaints happen mid-scroll (a tick, a logged event); losing the reading
+  // position on every one makes long views unusable.
+  const scroll = mcBody.scrollTop;
   mcBody.innerHTML = `<div class="mc-grid">${(MC_VIEWS[mcView] || viewDashboard)()}</div>`;
+  mcBody.scrollTop = scroll;
 }
 
+let mcClock = null;
 function setMC(open) {
   mcOpen = open;
   mcEl.hidden = !open;
   $('btn-mc').classList.toggle('on', open);
+  clearInterval(mcClock);
   if (open) {
     renderMC();
+    // Only the strip re-renders on the tick — it holds no user input, and the
+    // LOCAL cell would otherwise freeze at whatever time the overlay opened.
+    mcClock = setInterval(renderStrip, 1000);
     // Storage size is async; fill it in and repaint once it lands.
     if (navigator.storage && navigator.storage.estimate) {
       navigator.storage.estimate().then((est) => {
@@ -2004,8 +2131,9 @@ mcEl.addEventListener('click', (e) => {
     store.write('zero.roadmap', roadDone);
     renderRoadmap();
     const label = (DATA.roadmap.find((p) => p.id === id) || {}).label || id;
+    // logEvent repaints mission control itself while it is open — a second
+    // renderMC() here would render twice per tick for nothing.
     logEvent('roadmap', (roadDone[id] ? 'Completed: ' : 'Reopened: ') + label);
-    renderMC();
     return;
   }
 
