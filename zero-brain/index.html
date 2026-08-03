@@ -215,6 +215,118 @@ canvas#c.pointing { cursor: pointer; }
 }
 .d-table th { color: var(--dim); font-weight: 400; letter-spacing: 1px; width: 44%; }
 .d-table td { color: #cadbe7; }
+
+/* ── Mission control ─────────────────────────────────────────── */
+.mc {
+  position: fixed; inset: 0; z-index: 40; display: flex;
+  background: #01070a; overflow: hidden;
+}
+.mc[hidden] { display: none; }
+
+.mc-rail {
+  width: 214px; flex: 0 0 214px; border-right: 1px solid var(--line);
+  padding: 16px 12px; display: flex; flex-direction: column; gap: 3px;
+  background: rgba(0,0,0,.5);
+}
+.mc-brand {
+  font-size: 14px; font-weight: 800; letter-spacing: 5px; color: #fff;
+  text-shadow: 0 0 16px var(--glow); margin-bottom: 16px;
+}
+.mc-brand span {
+  display: block; font-size: 8px; letter-spacing: 2.4px;
+  color: var(--dim); margin-top: 4px; font-weight: 400;
+}
+.mc-nav {
+  background: none; border: 1px solid transparent; border-radius: 3px;
+  color: var(--dim); font: inherit; font-size: 9.5px; letter-spacing: 1.8px;
+  padding: 9px 10px; text-align: left; cursor: pointer;
+}
+.mc-nav:hover { color: #cfe6f3; border-color: var(--line); }
+.mc-nav.on {
+  color: var(--cy); border-color: var(--line);
+  background: rgba(var(--cy-rgb), .07); text-shadow: 0 0 10px var(--glow);
+}
+.mc-rail-foot { margin-top: auto; }
+
+.mc-main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.mc-strip {
+  display: flex; flex-wrap: wrap; gap: 22px; padding: 13px 20px;
+  border-bottom: 1px solid var(--line); font-size: 9px; letter-spacing: 1.5px;
+}
+.mc-strip div span { color: var(--dim); }
+.mc-strip div b { color: var(--cy); font-weight: 700; margin-left: 7px; }
+
+.mc-body { flex: 1; overflow-y: auto; padding: 18px 20px 30px; }
+.mc-grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(330px, 1fr)); }
+
+.mc-card {
+  background: rgba(4,14,16,.72); border: 1px solid var(--line);
+  border-radius: 4px; padding: 13px 14px 15px;
+}
+.mc-card > h3 {
+  font-size: 9px; letter-spacing: 2.4px; color: var(--cy); font-weight: 400;
+  border-bottom: 1px solid var(--line); padding-bottom: 7px; margin-bottom: 11px;
+  text-shadow: 0 0 10px var(--glow); display: flex; justify-content: space-between;
+}
+.mc-card > h3 em { font-style: normal; color: var(--dim); letter-spacing: 1.4px; }
+
+/* Big readouts, as in the reference dashboards */
+.mc-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); gap: 8px; }
+.mc-tile {
+  background: rgba(var(--cy-rgb), .05); border: 1px solid var(--line);
+  border-radius: 3px; padding: 11px 6px; text-align: center;
+}
+.mc-tile b {
+  display: block; font-size: 22px; font-weight: 800; color: var(--cy);
+  text-shadow: 0 0 14px var(--glow); line-height: 1.1;
+}
+.mc-tile span { font-size: 8px; letter-spacing: 1.5px; color: var(--dim); }
+
+.mc-row {
+  display: grid; grid-template-columns: 30px 1fr auto; gap: 9px;
+  align-items: center; padding: 7px 0; border-bottom: 1px solid rgba(var(--cy-rgb), .09);
+  font-size: 11px; color: #cadbe7;
+}
+.mc-row:last-child { border-bottom: none; }
+.mc-row .pri {
+  font-size: 8.5px; letter-spacing: 1px; text-align: center; border-radius: 2px;
+  padding: 2px 0; background: rgba(var(--cy-rgb), .12); color: var(--cy);
+}
+.mc-row.done .lbl { color: var(--dim); text-decoration: line-through; }
+.mc-row .lbl { cursor: pointer; }
+.mc-row .lbl:hover { color: #fff; }
+
+.badge {
+  font-size: 8px; letter-spacing: 1.3px; padding: 3px 7px; border-radius: 2px;
+  border: 1px solid var(--line); color: var(--dim); white-space: nowrap;
+}
+.badge.ok   { color: #05121a; background: var(--cy); border-color: var(--cy); }
+.badge.warn { color: #ffcf6b; border-color: rgba(255,207,107,.45); }
+.badge.live { color: var(--cy); border-color: rgba(var(--cy-rgb), .5); }
+
+.bar { height: 4px; border-radius: 2px; background: rgba(var(--cy-rgb), .12); overflow: hidden; }
+.bar i { display: block; height: 100%; background: var(--cy); box-shadow: 0 0 10px var(--glow); }
+
+.mc-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(132px, 1fr)); gap: 9px; }
+.mc-mini {
+  border: 1px solid var(--line); border-radius: 3px; padding: 10px;
+  cursor: pointer; background: rgba(0,0,0,.3);
+}
+.mc-mini:hover { border-color: rgba(var(--cy-rgb), .55); background: rgba(var(--cy-rgb), .06); }
+.mc-mini .nm { font-size: 11px; color: #eaf6ff; margin-bottom: 7px; word-break: break-word; }
+.mc-mini .ct { font-size: 8.5px; color: var(--dim); letter-spacing: 1.2px; }
+.mc-mini .dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; margin-right: 5px; }
+
+.mc-feed { font-size: 10.5px; }
+.mc-feed div { padding: 6px 0; border-bottom: 1px solid rgba(var(--cy-rgb), .09); color: #cadbe7; }
+.mc-feed div:last-child { border-bottom: none; }
+.mc-feed time { color: var(--dim); font-size: 9px; float: right; }
+.mc-empty { color: var(--dim); font-size: 10.5px; line-height: 1.6; }
+
+@media (max-width: 820px) {
+  .mc-rail { width: 132px; flex-basis: 132px; }
+  .mc-brand { font-size: 11px; letter-spacing: 3px; }
+}
 code { background: rgba(var(--cy-rgb), .10); padding: 1px 4px; border-radius: 2px; color: #a9f5e2; }
 
 /* Capture */
@@ -299,6 +411,7 @@ code { background: rgba(var(--cy-rgb), .10); padding: 1px 4px; border-radius: 2p
       <button class="tbtn" id="btn-left"  type="button" title="System panel">SYS</button>
       <button class="tbtn" id="btn-right" type="button" title="Detail panel">INFO</button>
       <button class="tbtn" id="btn-mic"   type="button" title="Voice search">MIC</button>
+      <button class="tbtn" id="btn-mc"    type="button" title="Mission control (M)">MC</button>
       <button class="tbtn" id="btn-reset" type="button" title="Reset the camera">RESET</button>
     </div>
   </div>
@@ -351,6 +464,27 @@ code { background: rgba(var(--cy-rgb), .10); padding: 1px 4px; border-radius: 2p
       <span id="st-mic">MIC OFF</span>
     </div>
     <div class="hint">DRAG TO ORBIT · SCROLL TO ZOOM · CLICK A NODE · PRESS / TO SEARCH · ESC TO CLEAR</div>
+  </div>
+</div>
+
+<!-- ── Mission control: a full-screen command centre over the same data ── -->
+<div class="mc" id="mc" hidden>
+  <div class="mc-rail">
+    <div class="mc-brand">Z.E.R.O.<span>COMMAND CENTER</span></div>
+    <button class="mc-nav on" data-view="dashboard" type="button">DASHBOARD</button>
+    <button class="mc-nav" data-view="missions"  type="button">MISSION QUEUE</button>
+    <button class="mc-nav" data-view="nexus"     type="button">KNOWLEDGE NEXUS</button>
+    <button class="mc-nav" data-view="agents"    type="button">AGENT ROSTER</button>
+    <button class="mc-nav" data-view="activity"  type="button">AUDIT TRAIL</button>
+    <button class="mc-nav" data-view="vitals"    type="button">SYSTEM VITALS</button>
+    <div class="mc-rail-foot">
+      <button class="tbtn" id="mc-close" type="button">◄ BACK TO GRAPH</button>
+    </div>
+  </div>
+
+  <div class="mc-main">
+    <div class="mc-strip" id="mc-strip"></div>
+    <div class="mc-body" id="mc-body"></div>
   </div>
 </div>
 
@@ -1143,7 +1277,11 @@ detailEl.addEventListener('click', (e) => {
   const statusBtn = e.target.closest('[data-status]');
   if (statusBtn && selected) {
     const next = statusBtn.getAttribute('data-status');
-    saveNodeData(selected.id, { status: nodeData(selected.id).status === next ? '' : next });
+    const cleared = nodeData(selected.id).status === next;
+    saveNodeData(selected.id, { status: cleared ? '' : next });
+    logEvent('status', cleared
+      ? `Cleared status on ${selected.label}`
+      : `${selected.label} → ${next}`);
     renderDetail(selected);
     return;
   }
@@ -1153,10 +1291,13 @@ detailEl.addEventListener('click', (e) => {
   const n = selected;
 
   switch (act.getAttribute('data-act')) {
-    case 'fav':
-      saveNodeData(n.id, { fav: !nodeData(n.id).fav });
+    case 'fav': {
+      const next = !nodeData(n.id).fav;
+      saveNodeData(n.id, { fav: next });
+      logEvent('pin', (next ? 'Pinned ' : 'Unpinned ') + n.label);
       renderDetail(n);
       break;
+    }
     case 'focus':
       focusOn(n);
       break;
@@ -1191,6 +1332,14 @@ detailEl.addEventListener('input', (e) => {
     const tags = e.target.value.split(',').map((s) => s.trim()).filter(Boolean);
     saveNodeData(selected.id, { tags });
   }
+});
+
+// Logged on change rather than input: `change` fires on blur, so the trail gets
+// one entry per edit instead of one per keystroke.
+detailEl.addEventListener('change', (e) => {
+  if (!selected) return;
+  if (e.target.id === 'd-note') logEvent('note', `Edited note on ${selected.label}`);
+  else if (e.target.id === 'd-tags') logEvent('tags', `Tagged ${selected.label}`);
 });
 
 // ── Search ──────────────────────────────────────────────────────
@@ -1290,7 +1439,13 @@ resultsEl.addEventListener('click', (e) => {
 document.addEventListener('keydown', (e) => {
   const typing = /^(INPUT|TEXTAREA)$/.test(document.activeElement.tagName);
   if (e.key === '/' && !typing) { e.preventDefault(); qEl.focus(); qEl.select(); }
-  else if (e.key === 'Escape' && !typing) { qEl.value = ''; runSearch(''); clearSelection(); }
+  else if ((e.key === 'm' || e.key === 'M') && !typing) { setMC(!mcOpen); }
+  else if (e.key === 'Escape' && !typing) {
+    // Mission control is the top layer, so ESC dismisses it before it starts
+    // tearing down the graph's search and selection underneath.
+    if (mcOpen) { setMC(false); return; }
+    qEl.value = ''; runSearch(''); clearSelection();
+  }
 });
 
 // ── Left panel: metrics, legend, roadmap ────────────────────────
@@ -1387,6 +1542,7 @@ $('cap-add').addEventListener('click', () => {
   store.write('zero.captures', captures);
   capInput.value = '';
   renderCaptures();
+  logEvent('capture', 'Captured: ' + text.slice(0, 60) + (text.length > 60 ? '…' : ''));
   toast('Captured');
 });
 
@@ -1605,6 +1761,260 @@ if ('serviceWorker' in navigator) {
 }
 
 // ── Deep link: #node=<id> ───────────────────────────────────────
+// ── Event log ───────────────────────────────────────────────────
+// Backs the audit trail. Only real actions are recorded — nothing here is
+// synthesised, so an empty trail honestly means "you have not done anything
+// yet" rather than showing invented activity.
+let events = store.read('zero.events', []);
+if (!Array.isArray(events)) events = [];
+
+function logEvent(kind, text) {
+  events.unshift({ kind, text, at: Date.now() });
+  events = events.slice(0, 80);
+  store.write('zero.events', events);
+  if (mcOpen) renderMC();
+}
+
+// ── Mission control ─────────────────────────────────────────────
+const mcEl = $('mc');
+const mcBody = $('mc-body');
+const mcStrip = $('mc-strip');
+let mcOpen = false;
+let mcView = 'dashboard';
+let vitals = null;              // filled in asynchronously where available
+
+const STATUS_COLOR = {
+  mastered: '#4ff5d2', active: '#7ee787', learning: '#ffcf6b', parked: '#6f8a92',
+};
+
+function roadStats() {
+  const total = DATA.roadmap.length;
+  const done = DATA.roadmap.filter((p) => roadDone[p.id]).length;
+  return { total, done, pct: total ? Math.round((done / total) * 100) : 0 };
+}
+
+// Everything the user has actually written, across all nodes.
+function workspaceStats() {
+  const all = allNodeData();
+  const ids = Object.keys(all);
+  let notes = 0, pinned = 0;
+  const tags = new Set();
+  const statuses = {};
+  for (const id of ids) {
+    const d = nodeData(id);
+    if (d.note) notes++;
+    if (d.fav) pinned++;
+    for (const t of d.tags) tags.add(t);
+    if (d.status) statuses[d.status] = (statuses[d.status] || 0) + 1;
+  }
+  return { touched: ids.length, notes, pinned, tags: tags.size, statuses };
+}
+
+function tile(value, label) {
+  return `<div class="mc-tile"><b>${escapeHtml(String(value))}</b><span>${escapeHtml(label)}</span></div>`;
+}
+function card(title, meta, inner) {
+  return `<div class="mc-card"><h3>${escapeHtml(title)}` +
+    (meta ? `<em>${escapeHtml(meta)}</em>` : '') + `</h3>${inner}</div>`;
+}
+
+function renderStrip() {
+  const road = roadStats();
+  const ws = workspaceStats();
+  const now = new Date();
+  const bits = [
+    ['SYSTEM', 'ONLINE'],
+    ['GRAPH', `${nodes.length} NODES`],
+    ['SKILLS', DATA.counts.skills],
+    ['TOOLS', DATA.counts.tools],
+    ['ROADMAP', `${road.done}/${road.total}`],
+    ['NOTES', ws.notes],
+    ['CAPTURES', captures.length],
+    ['LOCAL', now.toLocaleTimeString()],
+  ];
+  mcStrip.innerHTML = bits.map(([k, v]) =>
+    `<div><span>${escapeHtml(k)}</span><b>${escapeHtml(String(v))}</b></div>`).join('');
+}
+
+function viewMissions() {
+  const road = roadStats();
+  const rows = DATA.roadmap.map((p, i) => {
+    const done = !!roadDone[p.id];
+    return `<div class="mc-row${done ? ' done' : ''}">` +
+      `<span class="pri">P${i}</span>` +
+      `<span class="lbl" data-phase="${escapeHtml(p.id)}">${escapeHtml(p.label)}</span>` +
+      `<span class="badge${done ? ' ok' : ''}">${done ? 'DONE' : 'OPEN'}</span></div>`;
+  }).join('');
+  return card('MISSION QUEUE', `${road.done}/${road.total} complete`,
+    `<div class="mc-tiles" style="margin-bottom:12px">${tile(road.done, 'DONE')}${tile(road.total - road.done, 'OPEN')}${tile(road.pct + '%', 'PROGRESS')}</div>` +
+    `<div class="bar" style="margin-bottom:12px"><i style="width:${road.pct}%"></i></div>` + rows);
+}
+
+function viewNexus() {
+  // Nodes carry their pillar's *id* ("memory"), not its display name.
+  const cards = DATA.pillars.map((p) => {
+    const node = nodes.find((n) => n.kind === 'pillar' && n.pillar === p.id);
+    const members = nodes.filter((n) => n.pillar === p.id && n.kind !== 'pillar');
+    const tools = members.reduce((sum, n) => sum + toolsFor(n.id).length, 0);
+    return `<div class="mc-mini" data-focus="${escapeHtml(node ? node.id : '')}">` +
+      `<div class="nm">${escapeHtml(p.name)}</div>` +
+      `<div class="ct"><span class="dot" style="background:${escapeHtml(node ? node.color : '#6f8a92')}"></span>` +
+      `${members.length} NODES · ${tools} TOOLS</div></div>`;
+  }).join('');
+  return card('KNOWLEDGE NEXUS', `${DATA.pillars.length} pillars`,
+    `<div class="mc-cards">${cards}</div>`);
+}
+
+function viewAgents(limit) {
+  const all = nodes.filter((n) => n.kind === 'skill');
+  const skills = limit ? all.slice(0, limit) : all;
+  const rows = skills.map((n) => {
+    const d = nodeData(n.id);
+    const colour = STATUS_COLOR[d.status] || 'rgba(111,138,146,.5)';
+    return `<div class="mc-mini" data-focus="${escapeHtml(n.id)}">` +
+      `<div class="nm">${escapeHtml(n.label)}</div>` +
+      `<div class="ct"><span class="dot" style="background:${colour}"></span>` +
+      `${escapeHtml((d.status || 'unset').toUpperCase())}${d.fav ? ' · PINNED' : ''}</div></div>`;
+  }).join('');
+  const ws = workspaceStats();
+  const counts = Object.entries(ws.statuses)
+    .map(([k, v]) => `${k} ${v}`).join(' · ') || 'no status set yet';
+  const meta = limit && all.length > limit
+    ? `${counts} · showing ${limit} of ${all.length}` : counts;
+  return card('AGENT ROSTER', meta, `<div class="mc-cards">${rows}</div>`);
+}
+
+function viewActivity() {
+  if (!events.length) {
+    return card('AUDIT TRAIL', 'no activity yet',
+      '<div class="mc-empty">Nothing recorded yet. Ticking a mission, writing a note, ' +
+      'setting a status or adding a capture will appear here.<br><br>' +
+      'This trail only ever shows things you actually did — it is never populated with sample data.</div>');
+  }
+  const rows = events.map((e) =>
+    `<div><time>${escapeHtml(new Date(e.at).toLocaleString())}</time>` +
+    `${escapeHtml(e.text)}</div>`).join('');
+  return card('AUDIT TRAIL', `${events.length} events`, `<div class="mc-feed">${rows}</div>`);
+}
+
+function viewVitals() {
+  const ws = workspaceStats();
+  const rows = [
+    ['graph nodes', nodes.length],
+    ['graph links', edges.length],
+    ['skills', DATA.counts.skills],
+    ['tools', DATA.counts.tools],
+    ['categories', DATA.counts.categories],
+    ['nodes you have touched', ws.touched],
+    ['notes written', ws.notes],
+    ['distinct tags', ws.tags],
+    ['pinned nodes', ws.pinned],
+    ['captures held', captures.length],
+    ['logged events', events.length],
+    ['connection', navigator.onLine ? 'online' : 'offline'],
+    ['cpu threads', navigator.hardwareConcurrency || 'unavailable'],
+    ['device memory', navigator.deviceMemory ? navigator.deviceMemory + ' GB' : 'unavailable'],
+    ['local storage used', vitals && vitals.usage != null ? vitals.usage : 'measuring…'],
+  ];
+  const table = '<table class="d-table">' + rows.map(([k, v]) =>
+    `<tr><th>${escapeHtml(k)}</th><td>${escapeHtml(String(v))}</td></tr>`).join('') + '</table>';
+  return card('SYSTEM VITALS', 'measured, not simulated', table +
+    '<div class="mc-empty" style="margin-top:10px">Browsers cannot report CPU or GPU load, ' +
+    'so those are absent rather than faked.</div>');
+}
+
+function viewDashboard() {
+  const road = roadStats();
+  const ws = workspaceStats();
+  const recent = events.slice(0, 6);
+  const feed = recent.length
+    ? `<div class="mc-feed">${recent.map((e) =>
+        `<div><time>${escapeHtml(new Date(e.at).toLocaleTimeString())}</time>${escapeHtml(e.text)}</div>`).join('')}</div>`
+    : '<div class="mc-empty">No activity recorded yet.</div>';
+
+  const open = DATA.roadmap.filter((p) => !roadDone[p.id]).slice(0, 4);
+  const next = open.length
+    ? open.map((p, i) => `<div class="mc-row"><span class="pri">P${DATA.roadmap.indexOf(p)}</span>` +
+        `<span class="lbl" data-phase="${escapeHtml(p.id)}">${escapeHtml(p.label)}</span>` +
+        `<span class="badge${i === 0 ? ' live' : ''}">${i === 0 ? 'NEXT' : 'QUEUED'}</span></div>`).join('')
+    : '<div class="mc-empty">Every phase is complete.</div>';
+
+  return (
+    card('OVERVIEW', '', `<div class="mc-tiles">${
+      tile(DATA.counts.skills, 'SKILLS')}${tile(DATA.counts.tools, 'TOOLS')}${
+      tile(nodes.length, 'NODES')}${tile(road.pct + '%', 'ROADMAP')}${
+      tile(ws.notes, 'NOTES')}${tile(captures.length, 'CAPTURES')}</div>`) +
+    card('UP NEXT', `${road.total - road.done} open`, next) +
+    card('RECENT ACTIVITY', '', feed) +
+    // The dashboard is the landing view, so it carries a live slice of the
+    // other sections rather than making you click through to see anything.
+    viewNexus() +
+    viewAgents(8)
+  );
+}
+
+const MC_VIEWS = {
+  dashboard: viewDashboard, missions: viewMissions, nexus: viewNexus,
+  agents: viewAgents, activity: viewActivity, vitals: viewVitals,
+};
+
+function renderMC() {
+  if (!DATA) return;
+  renderStrip();
+  mcBody.innerHTML = `<div class="mc-grid">${(MC_VIEWS[mcView] || viewDashboard)()}</div>`;
+}
+
+function setMC(open) {
+  mcOpen = open;
+  mcEl.hidden = !open;
+  $('btn-mc').classList.toggle('on', open);
+  if (open) {
+    renderMC();
+    // Storage size is async; fill it in and repaint once it lands.
+    if (navigator.storage && navigator.storage.estimate) {
+      navigator.storage.estimate().then((est) => {
+        vitals = { usage: est.usage != null ? (est.usage / 1024).toFixed(1) + ' KB' : 'unavailable' };
+        if (mcOpen && mcView === 'vitals') renderMC();
+      }, () => { vitals = { usage: 'unavailable' }; });
+    } else {
+      vitals = { usage: 'unavailable' };
+    }
+  }
+}
+
+$('btn-mc').addEventListener('click', () => setMC(!mcOpen));
+$('mc-close').addEventListener('click', () => setMC(false));
+
+mcEl.addEventListener('click', (e) => {
+  const nav = e.target.closest('[data-view]');
+  if (nav) {
+    mcView = nav.getAttribute('data-view');
+    for (const b of mcEl.querySelectorAll('.mc-nav')) b.classList.toggle('on', b === nav);
+    renderMC();
+    return;
+  }
+
+  // Ticking a mission here is the same action as in the side panel.
+  const phase = e.target.closest('[data-phase]');
+  if (phase) {
+    const id = phase.getAttribute('data-phase');
+    roadDone[id] = !roadDone[id];
+    store.write('zero.roadmap', roadDone);
+    renderRoadmap();
+    const label = (DATA.roadmap.find((p) => p.id === id) || {}).label || id;
+    logEvent('roadmap', (roadDone[id] ? 'Completed: ' : 'Reopened: ') + label);
+    renderMC();
+    return;
+  }
+
+  // Jumping to a node closes the centre so you land on the graph.
+  const focus = e.target.closest('[data-focus]');
+  if (focus) {
+    const node = byId.get(focus.getAttribute('data-focus'));
+    if (node) { setMC(false); select(node); }
+  }
+});
+
 function applyHash() {
   const m = location.hash.match(/^#node=(.+)$/);
   if (!m) return;
