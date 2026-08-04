@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#01070a">
+<title>Z.E.R.O. Command Center — Hardened Preview</title>
+<style>
+html,body{width:100%;height:100%;margin:0;background:#01070a;overflow:hidden}
+#zero{width:100%;height:100%;border:0;display:block;background:#01070a}
+#boot{position:fixed;inset:0;display:grid;place-items:center;background:#01070a;color:#4ff5d2;font:12px/1.5 ui-monospace,SFMono-Regular,Consolas,monospace;letter-spacing:.18em;z-index:10}
+#boot.done{display:none}
+</style>
+</head>
+<body>
+<div id="boot">INITIALIZING HARDENED COMMAND CENTER…</div>
+<iframe id="zero" src="index.html" title="Z.E.R.O. hardened command center"></iframe>
+<script>
+'use strict';
+
+const frame = document.getElementById('zero');
+const boot = document.getElementById('boot');
+
+function installHardening(win, doc) {
+  const style = doc.createElement('style');
+  style.textContent = `
+    @media (max-width: 820px) {
+      .mc-cards { grid-template-columns: repeat(auto-fit, minmax(min(100%, 96px), 1fr)) !important; }
+      .mc-body { padding-left: 10px !important; padding-right: 10px !important; }
+      .mc-card { padding-left: 10px !important; padding-right: 10px !important; overflow: hidden; }
+    }
+    @media (max-width: 380px) {
+      .mc-rail { width: 108px !important; flex-basis: 108px !important; padding-left: 7px !important; padding-right: 7px !important; }
+      .mc-brand { font-size: 10px !important; letter-spacing: 2px !important; }
+      .mc-nav { padding: 8px 6px !important; font-size: 8px !important; letter-spacing: 1px !important; }
+      .mc-strip { gap: 10px !important; padding-left: 10px !important; padding-right: 10px !important; }
+    }
+  `;
+  doc.head.appendChild(style);
+
+  function notify(message) {
+    if (typeof win.toast === 'function') win.toast(message);
+  }
+
+  win.copyText = function copyTextHardened(text, label) {
+    const done = () => notify((label || 'Text') + ' copied');
+    const blocked = () => notify('Copy blocked by the browser');
+
+    if (win.navigator.clipboard && win.navigator.clipboard.writeText) {
+      win.navigator.clipboard.writeText(text).then(done, blocked);
+      return;
+    }
+
+    const ta = doc.createElement('textarea');
+    ta.value = text;
+    ta.setAttribute('readonly', '');
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    doc.body.appendChild(ta);
+    ta.select();
+    let copied = false;
+    try { copied = doc.execCommand('copy') === true; } catch (_) { copied = false; }
+    ta.remove();
+    copied ? done() : blocked();
+  };
+
+  doc.addEventListener('click', (event) => {
+    const button = event.target.closest('[data-act="link"]');
+    if (!button || !win.selected) return;
+
+    event.preventDefault();
+    event.stopImmediatePropagation();
+
+    const url = new URL(win.location.href);
+    url.hash = 'node=' + encodeURIComponent(win.selected.id);
+    win.copyText(url.href, 'Link');
+  }, true);
+
+  win.addEventListener('error', (event) => {
+    console.error('Z.E.R.O. runtime error:', event.error || event.message);
+  });
+
+  doc.documentElement.dataset.zeroHardening = 'active';
+}
+
+frame.addEventListener('load', () => {
+  try {
+    installHardening(frame.contentWindow, frame.contentDocument);
+    boot.classList.add('done');
+  } catch (error) {
+    boot.textContent = 'HARDENING FAILED — OPEN THROUGH GITHUB PAGES OR A LOCAL WEB SERVER';
+    console.error(error);
+  }
+});
+</script>
+</body>
+</html>
